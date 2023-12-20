@@ -1,4 +1,4 @@
-Recommended: use Base folder that is cloud-based, such as SharePoint - this will let you leverage within a Power BI semantic model and automatic refreshes. 
+Recommended: use a Base folder that is cloud-based (such as SharePoint) - this will make it easy to leverage within a Power BI semantic model and automatic refreshes. 
 
 1. PowerShell - Define Workspace ID and Base Folder path - run within PowerShell
 2. Tabular Editor 3 - Define Base Folder path and run C# script within Tabular Editor 3
