@@ -9,24 +9,8 @@ using System.Text;
 
     Instructions:
 
-    1. Paste this code into the Advanced Scripting window of Tabular Editor.
-    2. Create a new model in Tabular Editor (File -> New Model) (Compatibility Level does not matter).
-    3. Choose a method below and follow its respective steps.
-
-    Method 1: For a single Power BI Desktop (.pbix) or Power BI Template (.pbit) file:
-        1. Enter the folder location of the file in the 'pbiFolderName' parameter.
-        2. Enter the file name (including the extension) in the 'pbiFile' parameter.
-    
-        // You must open the model/dataset (behind the Power BI Report) in Tabular Editor in order for the following steps to work properly.
-        3. Setting the 'addPersp' parameter to 'true' will create a new perspective which contains all of the objects used in the Power BI report including object dependencies.
-        4. (Optional) Set the 'perspName' parameter to set the name of the perspective referenced in Step 3.
-
-    Method 2: For looping through multiple .pbix or .pbit files within a folder:
-        1. Enter the location of the folder in the 'pbiFolderName' parameter.
-        2. Ensure that the pbiFile parameter is empty (should be this:  @""; ).
-
-    Setting the 'saveToFile' parameter to 'true' will save the output text files to the respective folder.
-    Setting the 'saveToFile' parameter to 'false' will generate the output within pop-up windows. 
+    1. Open Tabular Editor 3 and paste this code into the Advanced Scripting window of Tabular Editor.
+    2. Define Base folder path used in Step 1 and then Run within Tabular Editor 3
 
 ************************************************************************************************************/
 
