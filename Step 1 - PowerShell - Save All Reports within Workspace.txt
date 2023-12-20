@@ -16,7 +16,7 @@ $reports = Get-PowerBIReport -WorkspaceId $workspaceid
 # Define the base file path
 $filepath_base = "C:\Report Backups"
 
-# Create a variable for end of week (Friday) date
+# Create a variable for current date
 $date = (Get-Date -UFormat "%Y-%m-%d")
 
 # Create a new folder for the end of week backups
