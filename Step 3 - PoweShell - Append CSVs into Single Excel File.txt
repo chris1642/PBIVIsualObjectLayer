@@ -1,6 +1,11 @@
 # Define the same base folder path defined in step 1 and 2
 $baseFolderPath = "C:\Report Backups"
 
+# Install the ImportExcel module if not already installed
+if (-not (Get-Module -ListAvailable -Name ImportExcel)) {
+    Install-Module -Name ImportExcel -Scope CurrentUser
+}
+
 # Create a variable for the current date
 $currentDate = Get-Date -UFormat "%Y-%m-%d"
 
