@@ -1,0 +1,39 @@
+# Define the base directory containing the CSV files
+$csvFolderPath = "C:\Report Backups\Model Backups"
+
+# Define the path and name the new Excel file
+$excelFilePath = "C:\Report Backups\ModelDetail.xlsx"
+
+# Check and delete the Excel file if it already exists
+if (Test-Path $excelFilePath) {
+    Remove-Item $excelFilePath
+    Write-Host "Existing Excel file removed."
+}
+
+# Get all CSV files from the directory
+$csvFiles = Get-ChildItem -Path $csvFolderPath -Filter *.csv
+
+# Check if there are any CSV files
+if ($csvFiles.Count -eq 0) {
+    Write-Host "No CSV files found in the directory."
+    exit
+}
+
+# Install the ImportExcel module if not already installed
+if (-not (Get-Module -ListAvailable -Name ImportExcel)) {
+    Install-Module -Name ImportExcel -Scope CurrentUser
+}
+
+# Initialize a list to hold all data
+$allData = New-Object System.Collections.Generic.List[Object]
+
+# Iterate through each CSV file and append its content to the list
+foreach ($csvFile in $csvFiles) {
+    $csvData = Import-Csv -Path $csvFile.FullName
+    $allData.AddRange($csvData)
+}
+
+# Export the combined data to an Excel file
+$allData | Export-Excel -Path $excelFilePath -AutoSize
+
+Write-Host "All CSV files have been combined into $excelFilePath"
