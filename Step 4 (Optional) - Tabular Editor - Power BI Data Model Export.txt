@@ -1,6 +1,8 @@
 var header = "Type,Table,Name,FormatString,DisplayFolder,Description,IsHidden,Expression,ModelAsOfDate,ModelName\n";
 
-string modelName = "YourModelName"; // Replace 'YourModelName' with your actual model name
+string modelName = Model.Database.Name;
+// Write to CSV file - replace with your model base folder up to "\{modelName}.csv"
+var filePath = $@"C:\Report Backups\Model Backups\{modelName}.csv";
 
 string FormatCsvField(string field) {
     if (string.IsNullOrEmpty(field)) {
@@ -140,6 +142,4 @@ var kpiData = string.Join("\n",
 // Combine all non-null and non-empty data
 var combinedData = new[] { calculationgroupData, columnsData, measuresData, hierarchiesData, levelsData, partitionsData, kpiData  };
 var csvContent = header + string.Join("\n", combinedData.Where(data => !string.IsNullOrEmpty(data)));
-// Write to CSV file - Identify folder within initial Base folder for Model details
-var filePath = $@"C:\Report Backups\Model Backups\{modelName}.csv";
 System.IO.File.WriteAllText(filePath, csvContent);
