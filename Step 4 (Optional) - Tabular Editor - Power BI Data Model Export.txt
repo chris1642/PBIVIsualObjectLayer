@@ -1,8 +1,19 @@
-var header = "Type,Table,Name,FormatString,DisplayFolder,Description,IsHidden,Expression,ModelAsOfDate,ModelName\n";
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 
-string modelName = Model.Database.Name;
-// Write to CSV file - replace with your model base folder up to "\{modelName}.csv"
-var filePath = $@"C:\Report Backups\Model Backups\{modelName}.csv";
+var basePath = @"C:\Report Backups\Model Backups"; // User-defined base path for Model backups (within Base folder of Steps 1-3)
+var modelName = Model.Database.Name; // Retrieve the model name
+
+string GetCurrentDateString() {
+    return DateTime.Now.ToString("yyyy-MM-dd"); // Formats the current date as a string
+}
+
+var dateFolderPath = Path.Combine(basePath, GetCurrentDateString()); // Generate the path for the date-specific folder
+Directory.CreateDirectory(dateFolderPath); // Ensure the directory exists, create it if it doesn't
+
+var filePath = Path.Combine(dateFolderPath, $"{modelName}.csv"); // Construct the full file path for the CSV
 
 string FormatCsvField(string field) {
     if (string.IsNullOrEmpty(field)) {
@@ -11,135 +22,111 @@ string FormatCsvField(string field) {
     return "\"" + field.Replace("\"", "\"\"") + "\""; // Encloses field in double quotes and escapes existing double quotes
 }
 
-// A helper function to safely process a collection and avoid rows with only empty fields
-string ProcessCollection<T>(IEnumerable<T> collection, Func<T, string[]> selector) {
-    if (collection == null || !collection.Any()) return null;
-
-    var processedLines = collection.Select(m => string.Join(",", selector(m))).Where(line => !string.IsNullOrWhiteSpace(line)).ToList();
-
-    if (processedLines.Count == 0) {
-        return null; // Return null if the processed collection is entirely empty
-    }
-    
-    return string.Join("\n", processedLines);
-}
-
-string GetCurrentDateString() {
-    return DateTime.Now.ToString("yyyy-MM-dd"); // Formats the current date
-}
+string header = "Type,Table,Name,FormatString,DisplayFolder,Description,IsHidden,Expression,ModelAsOfDate,ModelName\n"; // CSV header
 
 // Process CalculationGroups
-var calculationgroupData = string.Join("\n",
-    Model.CalculationGroups.Select(m => string.Join(",", new string[]{
-        FormatCsvField(m.ObjectType.ToString()),
-        "", // Table is not applicable for CalculationGroups
-        FormatCsvField(m.Name),
-        "", // FormatString is not applicable for CalculationGroups
-        "", // DisplayFolder is not applicable for CalculationGroups
-        FormatCsvField(m.Description),
-        FormatCsvField(m.IsHidden.ToString()),
-        "",  // Expression is not applicable for CalculationGroups
-        FormatCsvField(GetCurrentDateString()), // Adding the current date
- 	FormatCsvField(modelName) // Adding the model name
-    }))
-);
+var calculationgroupData = Model.CalculationGroups.Select(m => string.Join(",", new string[]{
+    FormatCsvField(m.ObjectType.ToString()),
+    "", 
+    FormatCsvField(m.Name),
+    "", 
+    "", 
+    FormatCsvField(m.Description),
+    FormatCsvField(m.IsHidden.ToString()),
+    "",  
+    FormatCsvField(GetCurrentDateString()), 
+    FormatCsvField(modelName) 
+})).Where(line => !string.IsNullOrWhiteSpace(line)).ToList();
 
 // Process AllColumns
-var columnsData = string.Join("\n",
-    Model.AllColumns.Select(m => string.Join(",", new string[]{
-        FormatCsvField(m.ObjectType.ToString()),
-        FormatCsvField(m.Table.Name),
-        FormatCsvField(m.Name),
-        FormatCsvField(m.FormatString),
-        FormatCsvField(m.DisplayFolder),
-        FormatCsvField(m.Description),
-        FormatCsvField(m.IsHidden.ToString()),
-        "",  // Expression is not applicable for AllColumns
-        FormatCsvField(GetCurrentDateString()), // Adding the current date
- 	FormatCsvField(modelName) // Adding the model name
-    }))
-);
+var columnsData = Model.AllColumns.Select(m => string.Join(",", new string[]{
+    FormatCsvField(m.ObjectType.ToString()),
+    FormatCsvField(m.Table.Name),
+    FormatCsvField(m.Name),
+    FormatCsvField(m.FormatString),
+    FormatCsvField(m.DisplayFolder),
+    FormatCsvField(m.Description),
+    FormatCsvField(m.IsHidden.ToString()),
+    "",  
+    FormatCsvField(GetCurrentDateString()), 
+    FormatCsvField(modelName) 
+})).Where(line => !string.IsNullOrWhiteSpace(line)).ToList();
 
 // Process Measures
-var measuresData = string.Join("\n",
-    Model.AllMeasures.Select(m => string.Join(",", new string[]{
-        FormatCsvField(m.ObjectType.ToString()),
-        FormatCsvField(m.Table.Name),
-        FormatCsvField(m.Name),
-        FormatCsvField(m.FormatString),
-        FormatCsvField(m.DisplayFolder),
-        FormatCsvField(m.Description),
-        FormatCsvField(m.IsHidden.ToString()),
-        FormatCsvField(m.Expression),
-        FormatCsvField(GetCurrentDateString()), // Adding the current date
- 	FormatCsvField(modelName) // Adding the model name
-    }))
-);
+var measuresData = Model.AllMeasures.Select(m => string.Join(",", new string[]{
+    FormatCsvField(m.ObjectType.ToString()),
+    FormatCsvField(m.Table.Name),
+    FormatCsvField(m.Name),
+    FormatCsvField(m.FormatString),
+    FormatCsvField(m.DisplayFolder),
+    FormatCsvField(m.Description),
+    FormatCsvField(m.IsHidden.ToString()),
+    FormatCsvField(m.Expression),
+    FormatCsvField(GetCurrentDateString()), 
+    FormatCsvField(modelName) 
+})).Where(line => !string.IsNullOrWhiteSpace(line)).ToList();
 
 // Process Hierarchies
-var hierarchiesData = string.Join("\n",
-    Model.AllHierarchies.Select(m => string.Join(",", new string[]{
-        FormatCsvField(m.ObjectType.ToString()),
-        FormatCsvField(m.Table.Name),
-        FormatCsvField(m.Name),
-        "", // FormatString is not applicable for Hierarchies
-        FormatCsvField(m.DisplayFolder),
-        FormatCsvField(m.Description),
-        FormatCsvField(m.IsHidden.ToString()),
-        "",  // Expression is not applicable for Hierarchies
-        FormatCsvField(GetCurrentDateString()), // Adding the current date
- 	FormatCsvField(modelName) // Adding the model name
-    }))
-);
+var hierarchiesData = Model.AllHierarchies.Select(m => string.Join(",", new string[]{
+    FormatCsvField(m.ObjectType.ToString()),
+    FormatCsvField(m.Table.Name),
+    FormatCsvField(m.Name),
+    "", 
+    FormatCsvField(m.DisplayFolder),
+    FormatCsvField(m.Description),
+    FormatCsvField(m.IsHidden.ToString()),
+    "",  
+    FormatCsvField(GetCurrentDateString()), 
+    FormatCsvField(modelName) 
+})).Where(line => !string.IsNullOrWhiteSpace(line)).ToList();
 
 // Process Levels
-var levelsData = string.Join("\n",
-    Model.AllLevels.Select(m => string.Join(",", new string[]{
-        FormatCsvField(m.ObjectType.ToString()),
-        FormatCsvField(m.Table.Name),
-        FormatCsvField(m.Name),
-        "", // FormatString is not applicable
-        "", // DisplayFolder is not applicable
-        FormatCsvField(m.Description),
-        "", // isHidden is not applicable
-        "", // Expression is not applicable
-        FormatCsvField(GetCurrentDateString()), // Adding the current date
- 	FormatCsvField(modelName) // Adding the model name
-    }))
-);
+var levelsData = Model.AllLevels.Select(m => string.Join(",", new string[]{
+    FormatCsvField(m.ObjectType.ToString()),
+    FormatCsvField(m.Table.Name),
+    FormatCsvField(m.Name),
+    "", 
+    "", 
+    FormatCsvField(m.Description),
+    "", 
+    "", 
+    FormatCsvField(GetCurrentDateString()), 
+    FormatCsvField(modelName) 
+})).Where(line => !string.IsNullOrWhiteSpace(line)).ToList();
 
 // Process Partitions
-var partitionsData = string.Join("\n",
-    Model.AllPartitions.Select(m => string.Join(",", new string[]{
-        FormatCsvField(m.ObjectType.ToString()),
-        FormatCsvField(m.Table.Name),
-        FormatCsvField(m.Name),
-        "", // FormatString is not applicable
-        "", // DisplayFolder is not applicable
-        FormatCsvField(m.Description),
-        "", // isHidden is not applicable
-        FormatCsvField(m.Expression),
-        FormatCsvField(GetCurrentDateString()), // Adding the current date
- 	FormatCsvField(modelName) // Adding the model name
-    }))
-);
+var partitionsData = Model.AllPartitions.Select(m => string.Join(",", new string[]{
+    FormatCsvField(m.ObjectType.ToString()),
+    FormatCsvField(m.Table.Name),
+    FormatCsvField(m.Name),
+    "", 
+    "", 
+    FormatCsvField(m.Description),
+    "", 
+    FormatCsvField(m.Expression),
+    FormatCsvField(GetCurrentDateString()), 
+    FormatCsvField(modelName) 
+})).Where(line => !string.IsNullOrWhiteSpace(line)).ToList();
+
 // Process KPIs
-var kpiData = string.Join("\n",
-    Model.AllKPIs.Select(m => string.Join(",", new string[]{
-        FormatCsvField(m.ObjectType.ToString()),
-        FormatCsvField(m.Table.Name),
-        FormatCsvField(m.Name),
-        "", // FormatString is not applicable
-        "", // DisplayFolder is not applicable
-        FormatCsvField(m.Description),
-        "", // isHidden is not applicable
-        FormatCsvField(m.Expression),
-        FormatCsvField(GetCurrentDateString()), // Adding the current date
- 	FormatCsvField(modelName) // Adding the model name
-    }))
-);
+var kpiData = Model.AllKPIs.Select(m => string.Join(",", new string[]{
+    FormatCsvField(m.ObjectType.ToString()),
+    FormatCsvField(m.Table.Name),
+    FormatCsvField(m.Name),
+    "", 
+    "", 
+    FormatCsvField(m.Description),
+    "", 
+    FormatCsvField(m.Expression),
+    FormatCsvField(GetCurrentDateString()), 
+    FormatCsvField(modelName) 
+})).Where(line => !string.IsNullOrWhiteSpace(line)).ToList();
 
 // Combine all non-null and non-empty data
-var combinedData = new[] { calculationgroupData, columnsData, measuresData, hierarchiesData, levelsData, partitionsData, kpiData  };
-var csvContent = header + string.Join("\n", combinedData.Where(data => !string.IsNullOrEmpty(data)));
-System.IO.File.WriteAllText(filePath, csvContent);
+var combinedData = new[] { calculationgroupData, columnsData, measuresData, hierarchiesData, levelsData, partitionsData, kpiData }
+    .Where(data => data.Any())
+    .SelectMany(data => data);
+
+var csvContent = header + string.Join("\n", combinedData);
+
+System.IO.File.WriteAllText(filePath, csvContent); // Write the CSV content to the file
