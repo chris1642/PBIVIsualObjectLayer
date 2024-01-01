@@ -1,39 +1,45 @@
-# Define the base directory containing the CSV files
-$csvFolderPath = "C:\Report Backups\Model Backups"
+# Define the base folder path
+$baseFolderPath = "C:\Report Backups\Model Backups"
 
-# Define the path and name the new Excel file
-$excelFilePath = "C:\Report Backups\ModelDetail.xlsx"
+# Create a variable for the current date
+$currentDate = Get-Date -UFormat "%Y-%m-%d"
 
-# Check and delete the Excel file if it already exists
-if (Test-Path $excelFilePath) {
-    Remove-Item $excelFilePath
-    Write-Host "Existing Excel file removed."
+# Create a new folder for the current date
+$currentDateFolder = Join-Path -Path $baseFolderPath -ChildPath $currentDate
+New-Item -Path $currentDateFolder -ItemType Directory -Force
+
+# Define the parent folder path
+$parentFolderPath = Split-Path -Path $baseFolderPath -Parent
+
+# Define the output Excel file path in the parent folder
+$outputExcelFile = Join-Path -Path $parentFolderPath -ChildPath "ModelDetail.xlsx"
+
+# Check if the Excel file already exists
+if (Test-Path -Path $outputExcelFile) {
+    $excelExists = $true
+} else {
+    $excelExists = $false
 }
 
-# Get all CSV files from the directory
-$csvFiles = Get-ChildItem -Path $csvFolderPath -Filter *.csv
-
-# Check if there are any CSV files
-if ($csvFiles.Count -eq 0) {
-    Write-Host "No CSV files found in the directory."
-    exit
-}
-
-# Install the ImportExcel module if not already installed
-if (-not (Get-Module -ListAvailable -Name ImportExcel)) {
-    Install-Module -Name ImportExcel -Scope CurrentUser
-}
-
-# Initialize a list to hold all data
-$allData = New-Object System.Collections.Generic.List[Object]
-
-# Iterate through each CSV file and append its content to the list
-foreach ($csvFile in $csvFiles) {
+foreach ($csvFile in (Get-ChildItem -Path $currentDateFolder -Filter *.csv)) {
+    # Get the base name of the file (without extension) for the worksheet name
+    $worksheetName = [System.IO.Path]::GetFileNameWithoutExtension($csvFile.FullName)
+    
+    # Import the CSV file
     $csvData = Import-Csv -Path $csvFile.FullName
-    $allData.AddRange($csvData)
+
+    if ($excelExists) {
+        # Append data to the existing Excel file
+        $csvData | Export-Excel -Path $outputExcelFile -WorksheetName $worksheetName -AutoNameRange -Append
+    } else {
+        # Create a new Excel file with the data
+        $csvData | Export-Excel -Path $outputExcelFile -WorksheetName $worksheetName -AutoNameRange
+        $excelExists = $true
+    }
 }
 
-# Export the combined data to an Excel file
-$allData | Export-Excel -Path $excelFilePath -AutoSize
-
-Write-Host "All CSV files have been combined into $excelFilePath"
+if ($excelExists) {
+    Write-Output "CSV files appended to $outputExcelFile"
+} else {
+    Write-Output "CSV files combined and exported to $outputExcelFile"
+}
