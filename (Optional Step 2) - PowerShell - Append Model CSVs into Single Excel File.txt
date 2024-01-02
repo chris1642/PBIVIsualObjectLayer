@@ -1,0 +1,49 @@
+# Define the base folder path
+$baseFolderPath = "C:\Power BI Backups"
+
+# Check if ImportExcel is installed, install if not
+if (-not (Get-Module -Name ImportExcel -ListAvailable)) {
+    Install-Module -Name ImportExcel -Scope CurrentUser -Force
+}
+
+# Import the modules
+Import-Module ImportExcel
+
+# Define the report backups path
+$reportBackupsPath = Join-Path -Path $baseFolderPath -ChildPath "Model Backups"
+
+# Create a variable for today's date
+$date = (Get-Date -UFormat "%Y-%m-%d")
+
+# Create a new folder for the end of week backups
+$new_date_folder = Join-Path -Path $reportBackupsPath -ChildPath $date
+New-Item -Path $new_date_folder -ItemType Directory -Force
+
+# Define the output Excel file path in the parent folder
+$outputExcelFile = Join-Path -Path $baseFolderPath -ChildPath "ModelDetail.xlsx"
+
+# Check if the Excel file already exists
+if (Test-Path -Path $outputExcelFile) {
+    $excelExists = $true
+} else {
+    $excelExists = $false
+}
+
+foreach ($txtFile in (Get-ChildItem -Path $new_date_folder -Filter *.txt)) {
+    # Get the base name of the file (without extension) for the worksheet name
+    $worksheetName = [System.IO.Path]::GetFileNameWithoutExtension($txtFile.FullName)
+    
+    # Import the TXT file, assuming it's tab-delimited and specifying UTF-8 encoding for special characters
+    $txtData = Get-Content -Path $txtFile.FullName -Encoding UTF8 | ConvertFrom-Csv -Delimiter "`t"
+
+    if ($excelExists) {
+        # Append data to the existing Excel file
+        $txtData | Export-Excel -Path $outputExcelFile -WorksheetName $worksheetName -AutoNameRange -Append
+    } else {
+        # Create a new Excel file with the data
+        $txtData | Export-Excel -Path $outputExcelFile -WorksheetName $worksheetName -AutoNameRange
+        $excelExists = $true
+    }
+}
+
+Write-Output "TXT files appended to $outputExcelFile"
