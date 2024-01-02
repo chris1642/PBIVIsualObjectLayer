@@ -1,13 +1,16 @@
 Recommended: use a Base folder that is cloud-based (such as a SharePoint folder synced to your computer) - this will make it easy to leverage within a Power BI semantic model and automatic refreshes. 
 
-1. PowerShell - Define Workspace ID and Base Folder path - run within PowerShell
-2. Tabular Editor 3 - Define Base Folder path and run C# script within Tabular Editor 3
-3. PowerShell - Define Base Folder path and run within PowerShell
-4. Tabular Editor 3 (Optional) - Define Base Model Backup Folder, Connect to Semantic Model within PBI, and run C# script
-5. PowerShell (Optional) - Define Base Model Backup Folder, and Excel File name and run within PowerShell
+1. PowerShell Script: Define Workspace ID & Base Folder (currently defaulted to C:/Power BI Backups)
+2. C# Script: Update Base Folder (only necessary if you change the Base folder from the default in Step 1)
+
+Run PowerShell Script. This will auto install Power BI & Excel modules (if not already installed), download all your reports from the Workspace ID defined in step 1, have Tabular Editor 2 run the C# script to extract all of the visual object layer details, and then PowerShell will combine the outputs into a single Excel file. 
+
+Once the base folder is defined, this can be re-ran as often as you'd like, and the combined Excel file will append with the associated date related to the Reports. 
 
 
-Once you have all 5 set up....downloading the PBIT will begin a refresh that is connected to C:/Report Backups and a Usage Metrics DirectQuery. When the initial refresh fails, click Transform Data -> Data Source settings and change the 3 connections to your Visual Object Layer Excel file, Model Detail excel file, and the Usage Metrics Report from the same Workspace you have downloaded reports from. 
+Optional:
+Step 1: Connect to a Semantic Model and run the TE3 Data Export. This will export all of the model details into text files
+Step 2: Any models exported will be combined into a single Excel file. 
 
 
 
