@@ -10,7 +10,9 @@ Once the base folder is defined, this can be re-ran as often as you'd like, and 
 
 
 Optional:
+
 Step 1: Connect to a Semantic Model and run the TE3 Data Export. This will export all of the model details into text files
+
 Step 2: Any models exported will be combined into a single Excel file. 
 
 
