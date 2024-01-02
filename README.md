@@ -2,6 +2,7 @@ Recommended: use a Base folder that is cloud-based (such as a SharePoint folder 
 
 1. PowerShell Script: Define Workspace ID & Base Folder (currently defaulted to C:/Power BI Backups)
 2. C# Script: Update Base Folder (only necessary if you change the Base folder from the default in Step 1)
+3. Place the 'Blank Model.bim' in the same Base Folder defined in Step 1 
 
 Run PowerShell Script. This will auto install Power BI & Excel modules (if not already installed), download all your reports from the Workspace ID defined in step 1, have Tabular Editor 2 run the C# script to extract all of the visual object layer details, and then PowerShell will combine the outputs into a single Excel file. 
 
