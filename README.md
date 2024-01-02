@@ -19,6 +19,8 @@ Step 2: Any models exported will be combined into a single Excel file.
 
 
 
+
+
 Once the refresh is completed, the measures and relationships are set up with the standard visuals that allow you to see:
 
 1. How much of your model are you actually using in visuals or filters?
