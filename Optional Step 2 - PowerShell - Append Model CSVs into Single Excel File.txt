@@ -12,14 +12,11 @@ Import-Module ImportExcel
 # Define the report backups path
 $reportBackupsPath = Join-Path -Path $baseFolderPath -ChildPath "Model Backups"
 
-# Create a variable for today's date
-$date = (Get-Date -UFormat "%Y-%m-%d")
+# Get the most recent date folder within the 'Model Backups' directory
+$mostRecentDateFolder = Get-ChildItem -Path $reportBackupsPath -Directory | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+$currentDateFolder = Join-Path -Path $reportBackupsPath -ChildPath $mostRecentDateFolder.Name
 
-# Create a new folder for the end of week backups
-$new_date_folder = Join-Path -Path $reportBackupsPath -ChildPath $date
-New-Item -Path $new_date_folder -ItemType Directory -Force
-
-# Define the output Excel file path in the parent folder
+# Define the output Excel file path in the base folder
 $outputExcelFile = Join-Path -Path $baseFolderPath -ChildPath "ModelDetail.xlsx"
 
 # Check if the Excel file already exists
@@ -29,21 +26,21 @@ if (Test-Path -Path $outputExcelFile) {
     $excelExists = $false
 }
 
-foreach ($txtFile in (Get-ChildItem -Path $new_date_folder -Filter *.txt)) {
+foreach ($csvFile in (Get-ChildItem -Path $currentDateFolder -Filter *.csv)) {
     # Get the base name of the file (without extension) for the worksheet name
-    $worksheetName = [System.IO.Path]::GetFileNameWithoutExtension($txtFile.FullName)
+    $worksheetName = [System.IO.Path]::GetFileNameWithoutExtension($csvFile.FullName)
     
-    # Import the TXT file, assuming it's tab-delimited and specifying UTF-8 encoding for special characters
-    $txtData = Get-Content -Path $txtFile.FullName -Encoding UTF8 | ConvertFrom-Csv -Delimiter "`t"
+    # Import the CSV file
+    $csvData = Import-Csv -Path $csvFile.FullName
 
     if ($excelExists) {
         # Append data to the existing Excel file
-        $txtData | Export-Excel -Path $outputExcelFile -WorksheetName $worksheetName -AutoNameRange -Append
+        $csvData | Export-Excel -Path $outputExcelFile -WorksheetName $worksheetName -AutoNameRange -Append
     } else {
         # Create a new Excel file with the data
-        $txtData | Export-Excel -Path $outputExcelFile -WorksheetName $worksheetName -AutoNameRange
+        $csvData | Export-Excel -Path $outputExcelFile -WorksheetName $worksheetName -AutoNameRange
         $excelExists = $true
     }
 }
 
-Write-Output "TXT files appended to $outputExcelFile"
+    Write-Output "CSV files appended to $outputExcelFile"
