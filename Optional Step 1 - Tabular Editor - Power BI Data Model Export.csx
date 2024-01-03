@@ -1,135 +1,133 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-
-var basePath = @"C:\Power BI Backups"; // User-defined base path
-
-var addedPath = Path.Combine(basePath, "Model Backups");
+// Define the base path for the backups
+var basePath = @"C:\Power BI Backups";
+var addedPath = System.IO.Path.Combine(basePath, "Model Backups");
 var modelName = Model.Database.Name; // Retrieve the model name
 
-string GetCurrentDateString() {
-    return DateTime.Now.ToString("yyyy-MM-dd"); // Formats the current date as a string
+// Get the current date as a string
+var currentDateStr = DateTime.Now.ToString("yyyy-MM-dd");
+
+// Create the directory for today's date if it doesn't exist
+var dateFolderPath = System.IO.Path.Combine(addedPath, currentDateStr);
+if (!System.IO.Directory.Exists(dateFolderPath))
+{
+    System.IO.Directory.CreateDirectory(dateFolderPath);
 }
 
-var dateFolderPath = Path.Combine(addedPath, GetCurrentDateString()); // Generate the path for the date-specific folder
-Directory.CreateDirectory(dateFolderPath); // Ensure the directory exists, create it if it doesn't
+// Define the path for the new file
+var filePath = System.IO.Path.Combine(dateFolderPath, modelName + ".csv");
 
-var filePath = Path.Combine(dateFolderPath, $"{modelName}.txt"); // Construct the full file path for the text file
+// Define the header for the file
+var header = "\"Type\",\"Table\",\"Name\",\"FormatString\",\"DisplayFolder\",\"Description\",\"IsHidden\",\"Expression\",\"ModelAsOfDate\",\"ModelName\"";
 
-string FormatField(string field) {
+// Initialize a string builder to collect data
+var sb = new System.Text.StringBuilder();
+sb.AppendLine(header);
+
+// Function to safely format a field as a string, escape quotes and handle commas
+Func<dynamic, string> FormatField = (field) =>
+{
     if (string.IsNullOrEmpty(field)) {
-        return ""; // Return an empty string if the field is null or empty
+        return "\"\""; // Return an empty quoted string if the field is null or empty
     }
-    return field; // For text files, you might not need to enclose fields in quotes, but you can adjust this as needed
+    return "\"" + field.Replace("\"", "\"\"") + "\""; };
+
+// Add calculation group data to the string builder
+foreach (var m in Model.CalculationGroups)
+{
+    sb.AppendLine(string.Join(",", 
+        FormatField("CalculationGroup"),
+        FormatField(""),
+        FormatField(m.Name),
+        FormatField(""),
+        FormatField(""),
+        FormatField(m.Description),
+        FormatField(m.IsHidden.ToString()),
+        FormatField(""),
+        FormatField(currentDateStr),
+        FormatField(modelName)
+    ));
 }
 
-// Update the header to use tabs
-string header = "Type\tTable\tName\tFormatString\tDisplayFolder\tDescription\tIsHidden\tExpression\tModelAsOfDate\tModelName\n";
-
-// Process CalculationGroups
-var calculationgroupData = Model.CalculationGroups.Select(m => string.Join("\t", new string[]{
-    FormatField(m.ObjectType.ToString()),
-    "", 
-    FormatField(m.Name),
-    "", 
-    "", 
-    FormatField(m.Description),
-    FormatField(m.IsHidden.ToString()),
-    "",  
-    FormatField(GetCurrentDateString()), 
-    FormatField(modelName) 
-})).Where(line => !string.IsNullOrWhiteSpace(line)).ToList();
-
-// Process AllColumns
-var columnsData = Model.AllColumns.Select(m => string.Join("\t", new string[]{
-    FormatField(m.ObjectType.ToString()),
-    FormatField(m.Table.Name),
-    FormatField(m.Name),
-    FormatField(m.FormatString),
-    FormatField(m.DisplayFolder),
-    FormatField(m.Description),
-    FormatField(m.IsHidden.ToString()),
-    "",  
-    FormatField(GetCurrentDateString()), 
-    FormatField(modelName) 
-})).Where(line => !string.IsNullOrWhiteSpace(line)).ToList();
-
+// Add columns data to the string builder
+foreach (var c in Model.AllColumns)
+{
+    sb.AppendLine(string.Join(",", 
+        FormatField("Column"),
+        FormatField(c.Table.Name),
+        FormatField(c.Name),
+        FormatField(c.FormatString),
+        FormatField(c.DisplayFolder),
+        FormatField(c.Description),
+        FormatField(c.IsHidden.ToString()),
+        FormatField(""),
+        FormatField(currentDateStr),
+        FormatField(modelName)
+    ));
+}
 // Process Measures
-var measuresData = Model.AllMeasures.Select(m => string.Join("\t", new string[]{
-    FormatField(m.ObjectType.ToString()),
-    FormatField(m.Table.Name),
-    FormatField(m.Name),
-    FormatField(m.FormatString),
-    FormatField(m.DisplayFolder),
-    FormatField(m.Description),
-    FormatField(m.IsHidden.ToString()),
-    FormatField(m.Expression),
-    FormatField(GetCurrentDateString()), 
-    FormatField(modelName) 
-})).Where(line => !string.IsNullOrWhiteSpace(line)).ToList();
-
+foreach (var am in Model.AllMeasures)
+{
+    sb.AppendLine(string.Join(",", 
+        FormatField("Measure"),
+        FormatField(am.Table.Name),
+        FormatField(am.Name),
+        FormatField(am.FormatString),
+        FormatField(am.DisplayFolder),
+        FormatField(am.Description),
+        FormatField(am.IsHidden.ToString()),
+        FormatField(am.Expression),
+        FormatField(currentDateStr),
+        FormatField(modelName)
+    ));
+}
 // Process Hierarchies
-var hierarchiesData = Model.AllHierarchies.Select(m => string.Join("\t", new string[]{
-    FormatField(m.ObjectType.ToString()),
-    FormatField(m.Table.Name),
-    FormatField(m.Name),
-    "", 
-    FormatField(m.DisplayFolder),
-    FormatField(m.Description),
-    FormatField(m.IsHidden.ToString()),
-    "",  
-    FormatField(GetCurrentDateString()), 
-    FormatField(modelName) 
-})).Where(line => !string.IsNullOrWhiteSpace(line)).ToList();
+foreach (var h in Model.AllHierarchies)
+{
+    sb.AppendLine(string.Join(",", 
+        FormatField("Hierarchy"),
+        FormatField(h.Table.Name),
+        FormatField(h.Name),
+        FormatField(""),
+        FormatField(h.DisplayFolder),
+        FormatField(h.Description),
+        FormatField(h.IsHidden.ToString()),
+        FormatField(""),
+        FormatField(currentDateStr),
+        FormatField(modelName)
+    ));
+}
 
 // Process Levels
-var levelsData = Model.AllLevels.Select(m => string.Join("\t", new string[]{
-    FormatField(m.ObjectType.ToString()),
-    FormatField(m.Table.Name),
-    FormatField(m.Name),
-    "", 
-    "", 
-    FormatField(m.Description),
-    "", 
-    "", 
-    FormatField(GetCurrentDateString()), 
-    FormatField(modelName) 
-})).Where(line => !string.IsNullOrWhiteSpace(line)).ToList();
-
+foreach (var l in Model.AllLevels)
+{
+    sb.AppendLine(string.Join(",", 
+        FormatField("Level"),
+        FormatField(l.Hierarchy.Table.Name),
+        FormatField(l.Name),
+        FormatField(""),
+        FormatField(""),
+        FormatField(l.Description),
+        FormatField(""),
+        FormatField(""),
+        FormatField(currentDateStr),
+        FormatField(modelName)
+    ));
+}
 // Process Partitions
-var partitionsData = Model.AllPartitions.Select(m => string.Join("\t", new string[]{
-    FormatField(m.ObjectType.ToString()),
-    FormatField(m.Table.Name),
-    FormatField(m.Name),
-    "", 
-    "", 
-    FormatField(m.Description),
-    "", 
-    FormatField(m.Expression),
-    FormatField(GetCurrentDateString()), 
-    FormatField(modelName) 
-})).Where(line => !string.IsNullOrWhiteSpace(line)).ToList();
-
-// Process KPIs
-var kpiData = Model.AllKPIs.Select(m => string.Join("\t", new string[]{
-    FormatField(m.ObjectType.ToString()),
-    FormatField(m.Table.Name),
-    FormatField(m.Name),
-    "", 
-    "", 
-    FormatField(m.Description),
-    "", 
-    FormatField(m.Expression),
-    FormatField(GetCurrentDateString()), 
-    FormatField(modelName) 
-})).Where(line => !string.IsNullOrWhiteSpace(line)).ToList();
-
-// Combine all non-null and non-empty data
-var combinedData = new[] { calculationgroupData, columnsData, measuresData, hierarchiesData, levelsData, partitionsData, kpiData }
-    .Where(data => data.Any())
-    .SelectMany(data => data);
-
-var textContent = header + string.Join("\n", combinedData);
-
-System.IO.File.WriteAllText(filePath, textContent); // Write the text content to the file
+foreach (var p in Model.AllPartitions)
+{
+    sb.AppendLine(string.Join(",", 
+        FormatField("Partition"),
+        FormatField(p.Table.Name),
+        FormatField(p.Name),
+        FormatField(""),
+        FormatField(""),
+        FormatField(p.Description),
+        FormatField(""),
+        FormatField(p.Expression),
+        FormatField(currentDateStr),
+        FormatField(modelName)
+    ));
+}
+// Write the file content to the file
+System.IO.File.WriteAllText(filePath, sb.ToString());
