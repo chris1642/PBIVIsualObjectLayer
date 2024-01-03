@@ -48,8 +48,8 @@ foreach ($report in $reports) {
 Write-Output "Reports exported to $new_date_folder"
 
 # Start Tabular Editor process
-$p = Start-Process -filePath "C:\Program Files (x86)\Tabular Editor 2\TabularEditor.exe" -Wait -NoNewWindow -PassThru `
-       -ArgumentList "`"$baseFolderPath\Blank Model.bim`" -S `"$baseFolderPath\CC-Tabular Editor Visual Object Layer Script.csx`" -B `"localhost\tabular`" `"MyModel`""
+$p = Start-Process -filePath "C:\Program Files (x86)\Tabular Editor\TabularEditor.exe" -Wait -NoNewWindow -PassThru `
+       -ArgumentList "`"$baseFolderPath\Blank Model.bim`" -S `"$baseFolderPath\Tabular Editor Visual Object Layer Script.csx`" -B `"localhost\tabular`" `"MyModel`""
 
 
 # Define the output Excel file path in the parent folder
