@@ -30,10 +30,10 @@ if (-not (Test-Path -Path $reportBackupsPath)) {
     New-Item -Path $reportBackupsPath -ItemType Directory
 }
 
-# Create a variable for end of week (Friday) date
+# Create a variable for today's date
 $date = (Get-Date -UFormat "%Y-%m-%d")
 
-# Create a new folder for the end of week backups
+# Create a new folder for the date's backup
 $new_date_folder = Join-Path -Path $reportBackupsPath -ChildPath $date
 New-Item -Path $new_date_folder -ItemType Directory -Force
 
