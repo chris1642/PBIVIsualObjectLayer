@@ -1,25 +1,30 @@
 # Define the base folder path at the beginning of the script
 $baseFolderPath = "C:\Power BI Backups"
 
-# Check if MicrosoftPowerBIMgmt is installed, install if not
-if (-not (Get-Module -Name MicrosoftPowerBIMgmt -ListAvailable)) {
-    Install-Module -Name MicrosoftPowerBIMgmt -Scope CurrentUser -Force
+# Define workspace ID from desired Power BI Workspace
+$workspaceid = "XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+
+
+# Check and set the execution policy
+$currentPolicy = Get-ExecutionPolicy -Scope CurrentUser
+if ($currentPolicy -eq 'Restricted') {
+    Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
 }
 
-# Check if ImportExcel is installed, install if not
-if (-not (Get-Module -Name ImportExcel -ListAvailable)) {
-    Install-Module -Name ImportExcel -Scope CurrentUser -Force
+# Check and install the necessary modules
+$requiredModules = @('MicrosoftPowerBIMgmt', 'ImportExcel')
+foreach ($module in $requiredModules) {
+    if (-not (Get-Module -ListAvailable -Name $module)) {
+        Install-Module -Name $module -Scope CurrentUser -Force
+    }
 }
 
-# Import the modules
-Import-Module MicrosoftPowerBIMgmt
 Import-Module ImportExcel
+Import-Module MicrosoftPowerBIMgmt
 
 # Login to Power BI
 Login-PowerBI
 
-# Get workspace info from desired Power BI Workspace
-$workspaceid = "XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
 $reports = Get-PowerBIReport -WorkspaceId $workspaceid
 
 # Define the report backups path
@@ -30,10 +35,10 @@ if (-not (Test-Path -Path $reportBackupsPath)) {
     New-Item -Path $reportBackupsPath -ItemType Directory
 }
 
-# Create a variable for today's date
+# Create a variable for end of week (Friday) date
 $date = (Get-Date -UFormat "%Y-%m-%d")
 
-# Create a new folder for the date's backup
+# Create a new folder for the end of week backups
 $new_date_folder = Join-Path -Path $reportBackupsPath -ChildPath $date
 New-Item -Path $new_date_folder -ItemType Directory -Force
 
@@ -48,8 +53,8 @@ foreach ($report in $reports) {
 Write-Output "Reports exported to $new_date_folder"
 
 # Start Tabular Editor process
-$p = Start-Process -filePath "C:\Program Files (x86)\Tabular Editor\TabularEditor.exe" -Wait -NoNewWindow -PassThru `
-       -ArgumentList "`"$baseFolderPath\Blank Model.bim`" -S `"$baseFolderPath\Tabular Editor Visual Object Layer Script.csx`" -B `"localhost\tabular`" `"MyModel`""
+$p = Start-Process -filePath "C:\Program Files (x86)\Tabular Editor 2\TabularEditor.exe" -Wait -NoNewWindow -PassThru `
+       -ArgumentList "`"$baseFolderPath\Blank Model.bim`" -S `"$baseFolderPath\CC-Tabular Editor Visual Object Layer Script.csx`" -B `"localhost\tabular`" `"MyModel`""
 
 
 # Define the output Excel file path in the parent folder
@@ -67,7 +72,7 @@ foreach ($txtFile in (Get-ChildItem -Path $new_date_folder -Filter *.txt)) {
     $worksheetName = [System.IO.Path]::GetFileNameWithoutExtension($txtFile.FullName)
     
     # Import the TXT file, assuming it's tab-delimited
-    $txtData = Get-Content -Path $txtFile.FullName | ConvertFrom-Csv -Delimiter "`t"
+    $txtData = Get-Content -Path $txtFile.FullName -Encoding UTF8 | ConvertFrom-Csv -Delimiter "`t"
 
     if ($excelExists) {
         # Append data to the existing Excel file
