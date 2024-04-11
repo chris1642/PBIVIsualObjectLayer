@@ -1,12 +1,20 @@
 # Define the base folder path
 $baseFolderPath = "C:\Power BI Backups"
 
-# Check if ImportExcel is installed, install if not
-if (-not (Get-Module -Name ImportExcel -ListAvailable)) {
-    Install-Module -Name ImportExcel -Scope CurrentUser -Force
+# Check and set the execution policy
+$currentPolicy = Get-ExecutionPolicy -Scope CurrentUser
+if ($currentPolicy -eq 'Restricted') {
+    Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
 }
 
-# Import the modules
+# Check and install the necessary modules
+$requiredModules = @('MicrosoftPowerBIMgmt', 'ImportExcel')
+foreach ($module in $requiredModules) {
+    if (-not (Get-Module -ListAvailable -Name $module)) {
+        Install-Module -Name $module -Scope CurrentUser -Force
+    }
+}
+
 Import-Module ImportExcel
 
 # Define the report backups path
