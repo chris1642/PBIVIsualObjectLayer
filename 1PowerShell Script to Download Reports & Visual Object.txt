@@ -49,6 +49,7 @@ New-Item -Path $new_date_folder -ItemType Directory -Force
 # Export each report in the workspace
 foreach ($report in $reports) {
     $filename = $report.Name -replace "[^a-zA-Z0-9]", " " # Clean up the file name
+    $filename = $filename.TrimStart() # Remove leading spaces if any
     $filename = "$filename.pbix"
     $filepath = Join-Path -Path $new_date_folder -ChildPath $filename
     Export-PowerBIReport -Id $report.Id -OutFile $filepath
