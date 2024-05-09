@@ -1,9 +1,10 @@
-# Define the base folder path at the beginning of the script
+# Define the base folder and script paths at the beginning of the script
 $baseFolderPath = "C:\Power BI Backups"
+$TabularEditor2Path = "C:\Program Files (x86)\Tabular Editor\TabularEditor.exe"
+$Script1Path = "$baseFolderPath\Tabular Editor Visual Object Layer Script.csx"
 
 # Define workspace ID from desired Power BI Workspace
 $workspaceid = "XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
-
 
 # Check and set the execution policy
 $currentPolicy = Get-ExecutionPolicy -Scope CurrentUser
@@ -42,7 +43,7 @@ if (-not (Test-Path -Path $reportBackupsPath)) {
 # Create a variable for end of week (Friday) date
 $date = (Get-Date -UFormat "%Y-%m-%d")
 
-# Create a new folder for the end of week backups
+# Create a new folder for the backups
 $new_date_folder = Join-Path -Path $reportBackupsPath -ChildPath $date
 New-Item -Path $new_date_folder -ItemType Directory -Force
 
@@ -58,8 +59,8 @@ foreach ($report in $reports) {
 Write-Output "Reports exported to $new_date_folder"
 
 # Start Tabular Editor process
-$p = Start-Process -filePath "C:\Program Files (x86)\Tabular Editor 2\TabularEditor.exe" -Wait -NoNewWindow -PassThru `
-       -ArgumentList "`"$baseFolderPath\Blank Model.bim`" -S `"$baseFolderPath\CC-Tabular Editor Visual Object Layer Script.csx`" -B `"localhost\tabular`" `"MyModel`""
+$p = Start-Process -filePath "$TabularEditor2Path" -Wait -NoNewWindow -PassThru `
+       -ArgumentList "`"$baseFolderPath\Blank Model.bim`" -S `"$Script1Path`" -B `"localhost\tabular`" `"MyModel`""
 
 
 # Define the output Excel file path in the parent folder
@@ -90,3 +91,4 @@ foreach ($txtFile in (Get-ChildItem -Path $new_date_folder -Filter *.txt)) {
 }
 
     Write-Output "TXT files appended to $outputExcelFile"
+ 
