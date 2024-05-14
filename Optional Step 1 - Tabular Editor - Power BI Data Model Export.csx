@@ -32,6 +32,23 @@ Func<dynamic, string> FormatField = (field) =>
     return "\"" + field.Replace("\"", "\"\"") + "\""; 
 };
 
+// Add table data to the string builder
+foreach (var t in Model.Tables)
+{
+    sb.AppendLine(string.Join(",", 
+        FormatField("Table"),
+        FormatField(t.Name),
+        FormatField(""),
+        FormatField(""),
+        FormatField(""),
+        FormatField(""),
+        FormatField(t.IsHidden.ToString()),
+        FormatField(""),
+        FormatField(currentDateStr),
+        FormatField(modelName)
+    ));
+}
+
 // Add calculation group data to the string builder
 foreach (var m in Model.CalculationGroups)
 {
@@ -156,4 +173,3 @@ foreach (var p in Model.AllPartitions)
 
 // Write the file content to the file
 System.IO.File.WriteAllText(filePath, sb.ToString());
- 
