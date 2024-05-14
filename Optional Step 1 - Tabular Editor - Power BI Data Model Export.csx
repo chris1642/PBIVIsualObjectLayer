@@ -29,7 +29,8 @@ Func<dynamic, string> FormatField = (field) =>
     if (string.IsNullOrEmpty(field)) {
         return "\"\""; // Return an empty quoted string if the field is null or empty
     }
-    return "\"" + field.Replace("\"", "\"\"") + "\""; };
+    return "\"" + field.Replace("\"", "\"\"") + "\""; 
+};
 
 // Add calculation group data to the string builder
 foreach (var m in Model.CalculationGroups)
@@ -64,6 +65,27 @@ foreach (var c in Model.AllColumns)
         FormatField(modelName)
     ));
 }
+
+// Add calculated columns data to the string builder
+foreach (var table in Model.Tables)
+{
+    foreach (var column in table.Columns.Where(c => c.Type == ColumnType.Calculated))
+    {
+        sb.AppendLine(string.Join(",", 
+            FormatField("CalculatedColumn"),
+            FormatField(column.Table.Name),
+            FormatField(column.Name),
+            FormatField(column.FormatString),
+            FormatField(column.DisplayFolder),
+            FormatField(column.Description),
+            FormatField(column.IsHidden.ToString()),
+            FormatField(""),
+            FormatField(currentDateStr),
+            FormatField(modelName)
+        ));
+    }
+}
+
 // Process Measures
 foreach (var am in Model.AllMeasures)
 {
@@ -80,6 +102,7 @@ foreach (var am in Model.AllMeasures)
         FormatField(modelName)
     ));
 }
+
 // Process Hierarchies
 foreach (var h in Model.AllHierarchies)
 {
@@ -113,6 +136,7 @@ foreach (var l in Model.AllLevels)
         FormatField(modelName)
     ));
 }
+
 // Process Partitions
 foreach (var p in Model.AllPartitions)
 {
@@ -129,5 +153,7 @@ foreach (var p in Model.AllPartitions)
         FormatField(modelName)
     ));
 }
+
 // Write the file content to the file
 System.IO.File.WriteAllText(filePath, sb.ToString());
+ 
