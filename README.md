@@ -11,7 +11,7 @@ Once the base folder is defined, this can be re-ran as often as you'd like, and 
 
 Optional:
 
-Step 1: Connect to a Semantic Model and run the Optional Step 1 Data Export. This will export all of the model details into csv files in the same base folder + Model Backups
+Step 1: Connect to a Semantic Model in Tabular Editor, go to the C# script window and run the Optional Step 1 Data Export. This will export all of the model details into csv files in the same base folder + Model Backups
 
 Step 2: Any models exported will be combined into a single Excel file. 
 
