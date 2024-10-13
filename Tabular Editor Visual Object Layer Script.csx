@@ -53,16 +53,16 @@ var sb_CustomVisuals = new System.Text.StringBuilder();
 sb_CustomVisuals.Append("ReportName" + '\t' + "Name" + '\t' + "ReportDate" + newline);
 
 var sb_ReportFilters = new System.Text.StringBuilder();
-sb_ReportFilters.Append("ReportName" + '\t' + "DisplayName" + '\t' + "TableName" + '\t' + "ObjectName" + '\t' + "ObjectType" + '\t' + "FilterType" + '\t' + "ReportDate" + newline);
+sb_ReportFilters.Append("ReportName" + '\t' + "DisplayName" + '\t' + "TableName" + '\t' + "ObjectName" + '\t' + "ObjectType" + '\t' + "FilterType"  + '\t' + "HiddenFilter"  + '\t' + "LockedFilter"  + '\t' + "AppliedFilterVersion"  + '\t' + "ReportDate" + newline);
 
 var sb_VisualObjects = new System.Text.StringBuilder();
 sb_VisualObjects.Append("ReportName" + '\t' + "PageName" + '\t' + "VisualId" + '\t' + "VisualType" + '\t' + "CustomVisualFlag" + '\t' + "TableName" + '\t' + "ObjectName" + '\t' + "ObjectType" + '\t' + "Source" + '\t' + "DisplayName" + '\t' + "ReportDate" + newline);
 
 var sb_VisualFilters = new System.Text.StringBuilder();
-sb_VisualFilters.Append("ReportName" + '\t' + "PageName" + '\t' + "VisualId" + '\t' + "TableName" + '\t' + "ObjectName" + '\t' + "ObjectType" + '\t' + "FilterType" + '\t' + "DisplayName" + '\t' + "ReportDate" + newline);
+sb_VisualFilters.Append("ReportName" + '\t' + "PageName" + '\t' + "VisualId" + '\t' + "TableName" + '\t' + "ObjectName" + '\t' + "ObjectType" + '\t' + "FilterType" + '\t' + "HiddenFilter"  + '\t' + "LockedFilter"  + '\t' + "AppliedFilterVersion"  + '\t' + "DisplayName" + '\t' + "ReportDate" + newline);
 
 var sb_PageFilters = new System.Text.StringBuilder();
-sb_PageFilters.Append("ReportName" + '\t' + "PageId" + '\t' + "PageName" + '\t' + "DisplayName" + '\t' + "TableName" + '\t' + "ObjectName" + '\t' + "ObjectType" + '\t' + "FilterType" + '\t' + "ReportDate" + newline);
+sb_PageFilters.Append("ReportName" + '\t' + "PageId" + '\t' + "PageName" + '\t' + "DisplayName" + '\t' + "TableName" + '\t' + "ObjectName" + '\t' + "ObjectType" + '\t' + "FilterType" + '\t' + "HiddenFilter"  + '\t' + "LockedFilter"  + '\t' + "AppliedFilterVersion"  + '\t' + "ReportDate" + newline);
 
 var sb_Bookmarks = new System.Text.StringBuilder();
 sb_Bookmarks.Append("ReportName" + '\t' + "Name" + '\t' + "Id" + '\t' + "PageId" + '\t' + "VisualId" + '\t' + "VisualHiddenFlag" + '\t' + "ReportDate" + newline);
@@ -139,6 +139,14 @@ catch (System.IO.DirectoryNotFoundException)
 {
     // Log or handle the DirectoryNotFoundException if needed
 }
+catch (System.IO.InvalidDataException ex)
+{
+
+}
+catch (Exception ex)
+{
+    
+}
 finally
     {
         // Delete zip file
@@ -149,8 +157,15 @@ finally
 
 
     // Layout file
+   
     string layoutPath = unzipPath + @"\Report\Layout";
     string jsonFilePath = Path.ChangeExtension(layoutPath, ".json");
+    
+        if (!File.Exists(layoutPath))
+    {
+        continue; // If Layout file is not found, continue to the next file
+    }
+    
     File.Move(layoutPath, jsonFilePath); 
 
     string unformattedJson = File.ReadAllText(jsonFilePath,System.Text.UnicodeEncoding.Unicode);
@@ -276,11 +291,26 @@ finally
         {
             string displayName = (string)o["displayName"];
             string filterType = (string)o["type"];
+            string hiddenfilter = (string)o["isHiddenInViewMode"];
+            string lockedfilter = (string)o["isLockedInViewMode"];
             string objectType = string.Empty;
             string objectName = string.Empty;
             string tableName = string.Empty;
+            string appliedfilterversion = string.Empty;
             
             // Note: Add filter conditions
+
+try
+{
+    if (o != null && o.ContainsKey("filter") && o["filter"].ContainsKey("Version"))
+    {
+        appliedfilterversion = o["filter"]["Version"].ToString();
+    }
+}
+catch (Exception ex)
+{
+}
+
             try
             {
                 objectName = (string)o["expression"]["Column"]["Property"];
@@ -343,32 +373,42 @@ finally
             catch
             {
             }           
-            ReportFilters.Add(new ReportFilter {displayName = displayName, TableName = tableName, ObjectName = objectName, ObjectType = objectType, FilterType = filterType});
+            ReportFilters.Add(new ReportFilter {displayName = displayName, TableName = tableName, ObjectName = objectName, ObjectType = objectType, FilterType = filterType, HiddenFilter = hiddenfilter, LockedFilter = lockedfilter, AppliedFilterVersion = appliedfilterversion});
         }
     }
     catch
     {        
     }
 
-    // Pages
-    foreach (var o in json["sections"].Children())
+// Pages
+foreach (var o in json["sections"].Children())
+{
+    string pageId = (string)o["name"];
+    
+    // Check if "displayName" exists in the JSON object before assigning
+    string pageName = o["displayName"] != null ? (string)o["displayName"] : ReportName;
+
+    string pageFlt = (string)o["filters"];
+    int pageNumber = 0;
+    try
     {
-        string pageId = (string)o["name"];
-        string pageName = (string)o["displayName"];
-        string pageFlt = (string)o["filters"];
-        int pageNumber = 0;
-        try
-        {
-            pageNumber = (int)o["ordinal"];
-        }
-        catch
-        {
-        }
-int pageWidth = (int)o["width"];
-int pageHeight = (int)o["height"];
-int visualCount = (int)o["visualContainers"].Count;
-string pageBkgrd = "";
-string pageWall = "";
+        pageNumber = (int)o["ordinal"];
+    }
+    catch
+    {
+    }
+
+    int pageWidth = (int)o["width"];
+    int pageHeight = (int)o["height"];
+    int visualCount = (int)o["visualContainers"].Count;
+    string pageBkgrd = "";
+    string pageWall = "";
+
+    // Use ReportName if pageName is null, empty, or whitespace
+    if (string.IsNullOrWhiteSpace(pageName))
+    {
+        pageName = ReportName;
+    }
 
 string formattedpagfltJson = "";
 if (!string.IsNullOrEmpty(pageFlt))
@@ -471,11 +511,25 @@ dynamic pageConfigJson = string.IsNullOrEmpty(formattedpagconfigJson)
         {
             string displayName = (string)o2["displayName"];
             string pgFltType = (string)o2["type"];
+            string pghiddenfilter = (string)o2["isHiddenInViewMode"];
+            string pglockedfilter = (string)o2["isLockedInViewMode"];
             string objType = string.Empty;
             string objName = string.Empty;
             string tblName = string.Empty;
+            string pgappliedfilterversion = string.Empty;
             
             // Note: Add filter conditions
+
+try
+{
+    if (o2 != null && o2.ContainsKey("filter") && o2["filter"].ContainsKey("Version"))
+    {
+        pgappliedfilterversion = o2["filter"]["Version"].ToString();
+    }
+}
+catch (Exception ex)
+{
+}
             try
             {
                 objName = (string)o2["expression"]["Column"]["Property"];
@@ -539,7 +593,7 @@ dynamic pageConfigJson = string.IsNullOrEmpty(formattedpagconfigJson)
             {
             }
 
-            PageFilters.Add(new PageFilter {PageId = pageId, PageName = pageName, displayName = displayName, TableName = tblName, ObjectName = objName, ObjectType = objType, FilterType = pgFltType });
+            PageFilters.Add(new PageFilter {PageId = pageId, PageName = pageName, displayName = displayName, TableName = tblName, ObjectName = objName, ObjectType = objType, FilterType = pgFltType, HiddenFilter = pghiddenfilter, LockedFilter = pglockedfilter, AppliedFilterVersion = pgappliedfilterversion });
         }
 
         // Visuals
@@ -707,14 +761,75 @@ dynamic pageConfigJson = string.IsNullOrEmpty(formattedpagconfigJson)
                     }
                     catch
                     {
+                    }                       
+                    try
+                    {
+                        objectName = (string)o2["Arithmetic"]["Left"]["Aggregation"]["Expression"]["Column"]["Property"];
+                        objectType = "Column";
+                        src = (string)o2["Arithmetic"]["Left"]["Aggregation"]["Expression"]["Column"]["Expression"]["SourceRef"]["Source"];
+                    }
+                    catch
+                    {
+                    }   
+                    try
+                    {
+                        objectName = (string)o2["Arithmetic"]["Right"]["Aggregation"]["Expression"]["Column"]["Property"];
+                        objectType = "Column";
+                        src = (string)o2["Arithmetic"]["Right"]["Aggregation"]["Expression"]["Column"]["Expression"]["SourceRef"]["Source"];
+                    }
+                    catch
+                    {
+                    }   
+                    try
+                    {
+                        objectName = (string)o2["Arithmetic"]["Left"]["Aggregation"]["Expression"]["Measure"]["Property"];
+                        objectType = "Measure";
+                        src = (string)o2["Arithmetic"]["Left"]["Aggregation"]["Expression"]["Measure"]["Expression"]["SourceRef"]["Source"];
+                    }
+                    catch
+                    {
+                    }   
+                    try
+                    {
+                        objectName = (string)o2["Arithmetic"]["Right"]["Aggregation"]["Expression"]["Measure"]["Property"];
+                        objectType = "Measure";
+                        src = (string)o2["Arithmetic"]["Right"]["Aggregation"]["Expression"]["Measure"]["Expression"]["SourceRef"]["Source"];
+                    }
+                    catch
+                    {
+                    }                      
+                     try
+                    {
+                        objectName = (string)o2["Arithmetic"]["Right"]["Measure"]["Property"];
+                        objectType = "Measure";
+                        src = (string)o2["Arithmetic"]["Right"]["Measure"]["Expression"]["SourceRef"]["Source"];
+                    }
+                    catch
+                    {
                     }
                     try
                     {
-                        string levelName = (string)o2["HierarchyLevel"]["Level"];
-                        string hierName = (string)o2["HierarchyLevel"]["Expression"]["Hierarchy"]["Hierarchy"];
-                        objectName = hierName + "." + levelName;
-                        objectType = "Hierarchy";
-                        src = (string)o2["HierarchyLevel"]["Expression"]["Hierarchy"]["Expression"]["SourceRef"]["Source"];
+                        objectName = (string)o2["Arithmetic"]["Left"]["Column"]["Property"];
+                        objectType = "Column";
+                        src = (string)o2["Arithmetic"]["Left"]["Column"]["Expression"]["SourceRef"]["Source"];
+                    }
+                    catch
+                    {
+                    }
+                     try
+                    {
+                        objectName = (string)o2["Arithmetic"]["Left"]["Measure"]["Property"];
+                        objectType = "Measure";
+                        src = (string)o2["Arithmetic"]["Left"]["Measure"]["Expression"]["SourceRef"]["Source"];
+                    }
+                    catch
+                    {
+                    }
+                    try
+                    {
+                        objectName = (string)o2["Arithmetic"]["Right"]["Column"]["Property"];
+                        objectType = "Column";
+                        src = (string)o2["Arithmetic"]["Right"]["Column"]["Expression"]["SourceRef"]["Source"];
                     }
                     catch
                     {
@@ -724,6 +839,26 @@ dynamic pageConfigJson = string.IsNullOrEmpty(formattedpagconfigJson)
                         objectName = (string)o2["Aggregation"]["Expression"]["Column"]["Property"];
                         objectType = "Column";
                         src = (string)o2["Aggregation"]["Expression"]["Column"]["Expression"]["SourceRef"]["Source"];
+                    }
+                    catch
+                    {
+                    }
+                    try
+                    {
+                        objectName = (string)o2["Aggregation"]["Expression"]["Measure"]["Property"];
+                        objectType = "Measure";
+                        src = (string)o2["Aggregation"]["Expression"]["Measure"]["Expression"]["SourceRef"]["Source"];
+                    }
+                    catch
+                    {
+                    }
+                    try
+                    {
+                        string levelName = (string)o2["HierarchyLevel"]["Level"];
+                        string hierName = (string)o2["HierarchyLevel"]["Expression"]["Hierarchy"]["Hierarchy"];
+                        objectName = hierName + "." + levelName;
+                        objectType = "Hierarchy";
+                        src = (string)o2["HierarchyLevel"]["Expression"]["Hierarchy"]["Expression"]["SourceRef"]["Source"];
                     }
                     catch
                     {
@@ -2053,11 +2188,25 @@ dynamic pageConfigJson = string.IsNullOrEmpty(formattedpagconfigJson)
                 {                  
                     string displayName = (string)o3["displayName"];
                     string filterType = (string)o3["type"];
+                    string hiddenfilter = (string)o3["isHiddenInViewMode"];
+                    string lockedfilter = (string)o3["isLockedInViewMode"];
                     string objType1 = string.Empty;
                     string objName1 = string.Empty;
                     string tblName1 = string.Empty;
-                    
-                    // Note: Add filter conditions
+            string appliedfilterversion = string.Empty;
+            
+            // Note: Add filter conditions
+
+try
+{
+    if (o3 != null && o3.ContainsKey("filter") && o3["filter"].ContainsKey("Version"))
+    {
+        appliedfilterversion = o3["filter"]["Version"].ToString();
+    }
+}
+catch (Exception ex)
+{
+}
                     try
                     {
                         objName1 = (string)o3["expression"]["Column"]["Property"];
@@ -2098,6 +2247,302 @@ dynamic pageConfigJson = string.IsNullOrEmpty(formattedpagconfigJson)
                     catch
                     {
                     }
+                    
+                            try
+        {
+            objName1 = (string)o3["expression"]["Aggregation"]["Expression"]["Column"]["Property"];
+            tblName1 = (string)o3["expression"]["Aggregation"]["Expression"]["Column"]["Expression"]["SourceRef"]["Entity"];
+            objType1 = "Column";
+            
+            if (createPersp)
+            {
+                try
+                {
+                    Model.Tables[tblName1].Columns[objName1].InPerspective[perspName] = true;
+                }
+                catch
+                {
+                    // Handle exception
+                }
+            }
+        }
+        catch
+        {
+        }
+try
+        {
+            objName1 = (string)o3["expression"]["Aggregation"]["Expression"]["Measure"]["Property"];
+            tblName1 = (string)o3["expression"]["Aggregation"]["Expression"]["Measure"]["Expression"]["SourceRef"]["Entity"];
+            objType1 = "Measure";
+            
+            if (createPersp)
+            {
+                try
+                {
+                    Model.Tables[tblName1].Columns[objName1].InPerspective[perspName] = true;
+                }
+                catch
+                {
+                    // Handle exception
+                }
+            }
+        }
+        catch
+        {
+        }
+                             try
+        {
+            objName1 = (string)o3["expression"]["Arithmetic"]["Left"]["Measure"]["Property"];
+            tblName1 = (string)o3["expression"]["Arithmetic"]["Left"]["Measure"]["Expression"]["SourceRef"]["Entity"];
+            objType1 = "Measure";
+            
+            if (createPersp)
+            {
+                try
+                {
+                    Model.Tables[tblName1].Columns[objName1].InPerspective[perspName] = true;
+                }
+                catch
+                {
+                    // Handle exception
+                }
+            }
+        }
+        catch
+        {
+        }
+                             try
+        {
+            objName1 = (string)o3["expression"]["Arithmetic"]["Left"]["Column"]["Property"];
+            tblName1 = (string)o3["expression"]["Arithmetic"]["Left"]["Column"]["Expression"]["SourceRef"]["Entity"];
+            objType1 = "Column";
+            
+            if (createPersp)
+            {
+                try
+                {
+                    Model.Tables[tblName1].Columns[objName1].InPerspective[perspName] = true;
+                }
+                catch
+                {
+                    // Handle exception
+                }
+            }
+        }
+        catch
+        {
+        }
+         try
+        {
+            objName1 = (string)o3["expression"]["Arithmetic"]["Right"]["Measure"]["Property"];
+            tblName1 = (string)o3["expression"]["Arithmetic"]["Right"]["Measure"]["Expression"]["SourceRef"]["Entity"];
+            objType1 = "Measure";
+            
+            if (createPersp)
+            {
+                try
+                {
+                    Model.Tables[tblName1].Columns[objName1].InPerspective[perspName] = true;
+                }
+                catch
+                {
+                    // Handle exception
+                }
+            }
+        }
+        catch
+        {
+        }
+         try
+        {
+            objName1 = (string)o3["expression"]["Arithmetic"]["Right"]["Column"]["Property"];
+            tblName1 = (string)o3["expression"]["Arithmetic"]["Right"]["Column"]["Expression"]["SourceRef"]["Entity"];
+            objType1 = "Column";
+            
+            if (createPersp)
+            {
+                try
+                {
+                    Model.Tables[tblName1].Columns[objName1].InPerspective[perspName] = true;
+                }
+                catch
+                {
+                    // Handle exception
+                }
+            }
+        }
+        catch
+        {
+        }
+         try
+        {
+            objName1 = (string)o3["expression"]["Arithmetic"]["Left"]["Aggregation"]["Expression"]["Column"]["Property"];
+            tblName1 = (string)o3["expression"]["Arithmetic"]["Left"]["Aggregation"]["Expression"]["Column"]["Expresssion"]["SourceRef"]["Entity"];
+            objType1 = "Column";
+            
+            if (createPersp)
+            {
+                try
+                {
+                    Model.Tables[tblName1].Columns[objName1].InPerspective[perspName] = true;
+                }
+                catch
+                {
+                    // Handle exception
+                }
+            }
+        }
+        catch
+        {
+        }
+         try
+        {
+            objName1 = (string)o3["expression"]["Arithmetic"]["Right"]["Aggregation"]["Expression"]["Column"]["Property"];
+            tblName1 = (string)o3["expression"]["Arithmetic"]["Right"]["Aggregation"]["Expression"]["Column"]["Expresssion"]["SourceRef"]["Entity"];
+            objType1 = "Column";
+            
+            if (createPersp)
+            {
+                try
+                {
+                    Model.Tables[tblName1].Columns[objName1].InPerspective[perspName] = true;
+                }
+                catch
+                {
+                    // Handle exception
+                }
+            }
+        }
+        catch
+        {
+        }
+         try
+        {
+            objName1 = (string)o3["expression"]["Arithmetic"]["Right"]["ScopedEval"]["Expression"]["Aggregation"]["Expression"]["Column"]["Property"];
+            tblName1 = (string)o3["expression"]["Arithmetic"]["Right"]["ScopedEval"]["Expression"]["Aggregation"]["Expression"]["Column"]["Expression"]["SourceRef"]["Entity"];
+            objType1 = "Column";
+            
+            if (createPersp)
+            {
+                try
+                {
+                    Model.Tables[tblName1].Columns[objName1].InPerspective[perspName] = true;
+                }
+                catch
+                {
+                    // Handle exception
+                }
+            }
+        }
+        catch
+        {
+        }
+         try
+        {
+            objName1 = (string)o3["expression"]["Arithmetic"]["Left"]["ScopedEval"]["Expression"]["Aggregation"]["Expression"]["Column"]["Property"];
+            tblName1 = (string)o3["expression"]["Arithmetic"]["Left"]["ScopedEval"]["Expression"]["Aggregation"]["Expression"]["Column"]["Expression"]["SourceRef"]["Entity"];
+            objType1 = "Column";
+            
+            if (createPersp)
+            {
+                try
+                {
+                    Model.Tables[tblName1].Columns[objName1].InPerspective[perspName] = true;
+                }
+                catch
+                {
+                    // Handle exception
+                }
+            }
+        }
+        catch
+        {
+        }
+         try
+        {
+            objName1 = (string)o3["expression"]["Arithmetic"]["Right"]["ScopedEval"]["Expression"]["Aggregation"]["Expression"]["Measure"]["Property"];
+            tblName1 = (string)o3["expression"]["Arithmetic"]["Right"]["ScopedEval"]["Expression"]["Aggregation"]["Expression"]["Measure"]["Expression"]["SourceRef"]["Entity"];
+            objType1 = "Measure";
+            
+            if (createPersp)
+            {
+                try
+                {
+                    Model.Tables[tblName1].Columns[objName1].InPerspective[perspName] = true;
+                }
+                catch
+                {
+                    // Handle exception
+                }
+            }
+        }
+        catch
+        {
+        }
+         try
+        {
+            objName1 = (string)o3["expression"]["Arithmetic"]["Left"]["ScopedEval"]["Expression"]["Aggregation"]["Expression"]["Measure"]["Property"];
+            tblName1 = (string)o3["expression"]["Arithmetic"]["Left"]["ScopedEval"]["Expression"]["Aggregation"]["Expression"]["Measure"]["Expression"]["SourceRef"]["Entity"];
+            objType1 = "Measure";
+            
+            if (createPersp)
+            {
+                try
+                {
+                    Model.Tables[tblName1].Columns[objName1].InPerspective[perspName] = true;
+                }
+                catch
+                {
+                    // Handle exception
+                }
+            }
+        }
+        catch
+        {
+        }
+         try
+        {
+            objName1 = (string)o3["expression"]["Arithmetic"]["Left"]["Aggregation"]["Expression"]["Measure"]["Property"];
+            tblName1 = (string)o3["expression"]["Arithmetic"]["Left"]["Aggregation"]["Expression"]["Measure"]["Expresssion"]["SourceRef"]["Entity"];
+            objType1 = "Measure";
+            
+            if (createPersp)
+            {
+                try
+                {
+                    Model.Tables[tblName1].Columns[objName1].InPerspective[perspName] = true;
+                }
+                catch
+                {
+                    // Handle exception
+                }
+            }
+        }
+        catch
+        {
+        }
+         try
+        {
+            objName1 = (string)o3["expression"]["Arithmetic"]["Right"]["Aggregation"]["Expression"]["Measure"]["Property"];
+            tblName1 = (string)o3["expression"]["Arithmetic"]["Right"]["Aggregation"]["Expression"]["Measure"]["Expresssion"]["SourceRef"]["Entity"];
+            objType1 = "Measure";
+            
+            if (createPersp)
+            {
+                try
+                {
+                    Model.Tables[tblName1].Columns[objName1].InPerspective[perspName] = true;
+                }
+                catch
+                {
+                    // Handle exception
+                }
+            }
+        }
+        catch
+        {
+        }
+                    
                     try
                     {
                         string levelName1 = (string)o3["expression"]["HierarchyLevel"]["Level"];
@@ -2120,7 +2565,7 @@ dynamic pageConfigJson = string.IsNullOrEmpty(formattedpagconfigJson)
                     catch
                     {
                     }
-                    VisualFilters.Add(new VisualFilter {PageName = pageName, VisualId = visualId, displayName = displayName, TableName = tblName1, ObjectName = objName1, ObjectType = objType1, FilterType = filterType });
+                    VisualFilters.Add(new VisualFilter {PageName = pageName, VisualId = visualId, displayName = displayName, TableName = tblName1, ObjectName = objName1, ObjectType = objType1, FilterType = filterType, HiddenFilter = hiddenfilter, LockedFilter = lockedfilter, AppliedFilterVersion = appliedfilterversion });
                 }
             }
         }
@@ -2214,15 +2659,15 @@ dynamic pageConfigJson = string.IsNullOrEmpty(formattedpagconfigJson)
     }
     foreach (var x in ReportFilters.ToList())
     {
-        sb_ReportFilters.Append(ReportName + '\t' + x.displayName + '\t' + x.TableName + '\t' + x.ObjectName + '\t' + x.ObjectType + '\t' + x.FilterType + '\t' + ReportDate + newline);
+        sb_ReportFilters.Append(ReportName + '\t' + x.displayName + '\t' + x.TableName + '\t' + x.ObjectName + '\t' + x.ObjectType + '\t' + x.FilterType + '\t' + x.HiddenFilter + '\t' + x.LockedFilter + '\t' + x.AppliedFilterVersion + '\t' + ReportDate + newline);
     }
     foreach (var x in PageFilters.ToList())
     {
-        sb_PageFilters.Append(ReportName + '\t' + x.PageId + '\t' + x.PageName + '\t' + x.displayName + '\t' + x.TableName + '\t' + x.ObjectName + '\t' + x.ObjectType + '\t' + x.FilterType + '\t' + ReportDate + newline);
+        sb_PageFilters.Append(ReportName + '\t' + x.PageId + '\t' + x.PageName + '\t' + x.displayName + '\t' + x.TableName + '\t' + x.ObjectName + '\t' + x.ObjectType + '\t' + x.FilterType + '\t' + x.HiddenFilter + '\t' + x.LockedFilter + '\t' + x.AppliedFilterVersion + '\t' + ReportDate + newline);
     }
     foreach (var x in VisualFilters.ToList())
     {
-        sb_VisualFilters.Append(ReportName + '\t' + x.PageName + '\t' + x.VisualId + '\t' + x.TableName + '\t' + x.ObjectName + '\t' + x.ObjectType + '\t' + x.FilterType + '\t' + x.displayName + '\t' + ReportDate + newline);
+        sb_VisualFilters.Append(ReportName + '\t' + x.PageName + '\t' + x.VisualId + '\t' + x.TableName + '\t' + x.ObjectName + '\t' + x.ObjectType + '\t' + x.FilterType + '\t' + x.HiddenFilter + '\t' + x.LockedFilter + '\t' + x.AppliedFilterVersion + '\t' + x.displayName + '\t' + ReportDate + newline);
     }
     foreach (var x in VisualObjects.ToList())
     {
@@ -2475,6 +2920,9 @@ public class ReportFilter
     public string ObjectName { get; set; }
     public string ObjectType { get; set; }
     public string FilterType { get; set; }
+    public string HiddenFilter { get; set; }
+    public string LockedFilter { get; set; }
+    public string AppliedFilterVersion { get; set; }
     public string ReportDate { get; set; }
 }
 
@@ -2520,6 +2968,9 @@ public class VisualFilter
     public string ObjectName { get; set; }
     public string ObjectType { get; set; }
     public string FilterType { get; set; }
+    public string HiddenFilter { get; set; }
+    public string LockedFilter { get; set; }
+    public string AppliedFilterVersion { get; set; }
     public string displayName { get; set; }
     public string ReportDate { get; set; }
 }
@@ -2532,7 +2983,10 @@ public class PageFilter
     public string TableName { get; set; }
     public string ObjectName { get; set; }
     public string ObjectType { get; set; }
-    public string FilterType { get; set; }    
+    public string FilterType { get; set; }   
+    public string HiddenFilter { get; set; }
+    public string LockedFilter { get; set; } 
+    public string AppliedFilterVersion { get; set; }
     public string ReportDate { get; set; } 
 }
 
