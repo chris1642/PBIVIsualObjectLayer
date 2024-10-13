@@ -17,7 +17,7 @@ if (!System.IO.Directory.Exists(dateFolderPath))
 var filePath = System.IO.Path.Combine(dateFolderPath, modelName + ".csv");
 
 // Define the header for the file
-var header = "\"Type\",\"Table\",\"Name\",\"FormatString\",\"DisplayFolder\",\"Description\",\"IsHidden\",\"Expression\",\"ModelAsOfDate\",\"ModelName\"";
+var header = "\"Type\",\"Table\",\"Name\",\"FormatString\",\"DisplayFolder\",\"Description\",\"IsHidden\",\"Expression\",\"ModelAsOfDate\",\"ModelName\",\"RelationshipFromTable\",\"RelationshipFromColumn\",\"RelationshipToTable\",\"RelationshipToColumn\",\"RelationshipStatus\",\"RelationshipFromCardinality\",\"RelationshipToCardinality\",\"RelationshipCrossFilteringBehavior\"";
 
 // Initialize a string builder to collect data
 var sb = new System.Text.StringBuilder();
@@ -38,14 +38,22 @@ foreach (var t in Model.Tables)
     sb.AppendLine(string.Join(",", 
         FormatField("Table"),
         FormatField(t.Name),
-        FormatField(""),
+        FormatField(t.Name),
         FormatField(""),
         FormatField(""),
         FormatField(""),
         FormatField(t.IsHidden.ToString()),
         FormatField(""),
         FormatField(currentDateStr),
-        FormatField(modelName)
+        FormatField(modelName),
+        FormatField(""),
+        FormatField(""),
+        FormatField(""),
+        FormatField(""),
+        FormatField(""),
+        FormatField(""),
+        FormatField(""),
+        FormatField("")
     ));
 }
 
@@ -62,7 +70,15 @@ foreach (var m in Model.CalculationGroups)
         FormatField(m.IsHidden.ToString()),
         FormatField(""),
         FormatField(currentDateStr),
-        FormatField(modelName)
+        FormatField(modelName),
+        FormatField(""),
+        FormatField(""),
+        FormatField(""),
+        FormatField(""),
+        FormatField(""),
+        FormatField(""),
+        FormatField(""),
+        FormatField("")
     ));
 }
 
@@ -79,7 +95,15 @@ foreach (var c in Model.AllColumns)
         FormatField(c.IsHidden.ToString()),
         FormatField(""),
         FormatField(currentDateStr),
-        FormatField(modelName)
+        FormatField(modelName),
+        FormatField(""),
+        FormatField(""),
+        FormatField(""),
+        FormatField(""),
+        FormatField(""),
+        FormatField(""),
+        FormatField(""),
+        FormatField("")
     ));
 }
 
@@ -98,7 +122,15 @@ foreach (var table in Model.Tables)
             FormatField(column.IsHidden.ToString()),
             FormatField(""),
             FormatField(currentDateStr),
-            FormatField(modelName)
+            FormatField(modelName),
+            FormatField(""),
+            FormatField(""),
+            FormatField(""),
+            FormatField(""),
+            FormatField(""),
+            FormatField(""),
+            FormatField(""),
+            FormatField("")
         ));
     }
 }
@@ -116,7 +148,15 @@ foreach (var am in Model.AllMeasures)
         FormatField(am.IsHidden.ToString()),
         FormatField(am.Expression),
         FormatField(currentDateStr),
-        FormatField(modelName)
+        FormatField(modelName),
+        FormatField(""),
+        FormatField(""),
+        FormatField(""),
+        FormatField(""),
+        FormatField(""),
+        FormatField(""),
+        FormatField(""),
+        FormatField("")
     ));
 }
 
@@ -133,7 +173,15 @@ foreach (var h in Model.AllHierarchies)
         FormatField(h.IsHidden.ToString()),
         FormatField(""),
         FormatField(currentDateStr),
-        FormatField(modelName)
+        FormatField(modelName),
+        FormatField(""),
+        FormatField(""),
+        FormatField(""),
+        FormatField(""),
+        FormatField(""),
+        FormatField(""),
+        FormatField(""),
+        FormatField("")
     ));
 }
 
@@ -150,7 +198,15 @@ foreach (var l in Model.AllLevels)
         FormatField(""),
         FormatField(""),
         FormatField(currentDateStr),
-        FormatField(modelName)
+        FormatField(modelName),
+        FormatField(""),
+        FormatField(""),
+        FormatField(""),
+        FormatField(""),
+        FormatField(""),
+        FormatField(""),
+        FormatField(""),
+        FormatField("")
     ));
 }
 
@@ -167,9 +223,43 @@ foreach (var p in Model.AllPartitions)
         FormatField(""),
         FormatField(p.Expression),
         FormatField(currentDateStr),
-        FormatField(modelName)
+        FormatField(modelName),
+        FormatField(""),
+        FormatField(""),
+        FormatField(""),
+        FormatField(""),
+        FormatField(""),
+        FormatField(""),
+        FormatField(""),
+        FormatField("")
     ));
 }
+
+// Process Relationships
+foreach (var r in Model.Relationships)
+{
+    sb.AppendLine(string.Join(",", 
+        FormatField("Relationship"),
+        FormatField(r.FromTable.Name),
+        FormatField(r.FromColumn.Name),
+        FormatField(""),
+        FormatField(""),
+        FormatField(""),
+        FormatField(""),
+        FormatField(r.Name),
+        FormatField(currentDateStr),
+        FormatField(modelName),
+        FormatField(r.FromTable.Name),
+        FormatField(r.FromColumn.Name),
+        FormatField(r.ToTable.Name),
+        FormatField(r.ToColumn.Name),
+        FormatField(r.IsActive.ToString()),  // Keep IsActive as it's likely supported
+        FormatField(r.FromCardinality.ToString()), // Add From Cardinality
+        FormatField(r.ToCardinality.ToString()), // Add To Cardinality
+        FormatField(r.CrossFilteringBehavior.ToString())
+    ));
+}
+
 
 // Write the file content to the file
 System.IO.File.WriteAllText(filePath, sb.ToString());
