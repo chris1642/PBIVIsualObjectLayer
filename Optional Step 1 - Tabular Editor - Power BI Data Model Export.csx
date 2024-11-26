@@ -3,11 +3,31 @@ var basePath = @"C:\Power BI Backups";
 var addedPath = System.IO.Path.Combine(basePath, "Model Backups");
 var modelName = Model.Database.Name; // Retrieve the model name
 
-// Get the current date as a string
-var currentDateStr = DateTime.Now.ToString("yyyy-MM-dd");
+// Dynamically find the latest-dated folder
+string[] folders = System.IO.Directory.GetDirectories(addedPath);
+string latestFolder = null;
+DateTime latestDate = DateTime.MinValue;
 
-// Create the directory for today's date if it doesn't exist
-var dateFolderPath = System.IO.Path.Combine(addedPath, currentDateStr);
+foreach (string folder in folders)
+{
+    string folderName = System.IO.Path.GetFileName(folder);
+    DateTime folderDate;
+
+    if (DateTime.TryParseExact(folderName, "yyyy-MM-dd", null, System.Globalization.DateTimeStyles.None, out folderDate))
+    {
+        if (folderDate > latestDate)
+        {
+            latestDate = folderDate;
+            latestFolder = folder;
+        }
+    }
+}
+
+// Use the latest-dated folder, or fallback to today's date if no valid folder is found
+var currentDateStr = latestFolder != null ? latestDate.ToString("yyyy-MM-dd") : DateTime.Now.ToString("yyyy-MM-dd");
+
+// Create the directory path
+var dateFolderPath = latestFolder ?? System.IO.Path.Combine(addedPath, currentDateStr);
 if (!System.IO.Directory.Exists(dateFolderPath))
 {
     System.IO.Directory.CreateDirectory(dateFolderPath);
@@ -259,7 +279,6 @@ foreach (var r in Model.Relationships)
         FormatField(r.CrossFilteringBehavior.ToString())
     ));
 }
-
 
 // Write the file content to the file
 System.IO.File.WriteAllText(filePath, sb.ToString());
