@@ -39,7 +39,6 @@ if (-not (Test-Path -Path $reportBackupsPath)) {
     New-Item -Path $reportBackupsPath -ItemType Directory
 }
 
-# Create a variable for end of week (Friday) date
 $date = (Get-Date -UFormat "%Y-%m-%d")
 
 # Create a new folder for the backups
@@ -48,7 +47,7 @@ New-Item -Path $new_date_folder -ItemType Directory -Force
 
 # Export each report in the workspace
 foreach ($report in $reports) {
-    $filename = $report.Name -replace "[^a-zA-Z0-9]", " " # Clean up the file name
+    $filename = $report.Name -replace "[^a-zA-Z0-9\(\)&.-]", " " # Clean up the file name
     $filename = $filename.TrimStart() # Remove leading spaces if any
     $filename = "$filename.pbix"
     $filepath = Join-Path -Path $new_date_folder -ChildPath $filename
@@ -65,14 +64,21 @@ $p = Start-Process -filePath "$TabularEditor2Path" -Wait -NoNewWindow -PassThru 
 # Define the output Excel file path in the parent folder
 $outputExcelFile = Join-Path -Path $baseFolderPath -ChildPath "VisualObjectLayer.xlsx"
 
-# Check if the Excel file already exists
-if (Test-Path -Path $outputExcelFile) {
-    $excelExists = $true
+# Get the latest folder by date
+$latestDateFolder = Get-ChildItem -Path $reportBackupsPath -Directory |
+    Where-Object { $_.Name -match '^\d{4}-\d{2}-\d{2}$' } |  # Filter for folders with a date pattern
+    Sort-Object { [datetime]::Parse($_.Name) } -Descending | # Sort by date, descending
+    Select-Object -First 1
+
+if ($latestDateFolder) {
+    $newDateFolder = $latestDateFolder.FullName
+    Write-Output "Using the latest dated folder: $newDateFolder"
 } else {
-    $excelExists = $false
+    Write-Error "No valid dated folders found in 'Report Backups'."
+    exit
 }
 
-foreach ($txtFile in (Get-ChildItem -Path $new_date_folder -Filter *.txt)) {
+foreach ($txtFile in (Get-ChildItem -Path $newDateFolder -Filter *.txt)) {
     # Get the base name of the file (without extension) for the worksheet name
     $worksheetName = [System.IO.Path]::GetFileNameWithoutExtension($txtFile.FullName)
     
