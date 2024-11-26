@@ -21,9 +21,31 @@ string baseFolderPath = @"C:\Power BI Backups"; // User-defined base path
 
 // Do not modify these parameters
 var addedPath = Path.Combine(baseFolderPath, "Report Backups");
-string DateToday = DateTime.Now.ToString("yyyy-MM-dd"); // Get the current date in "Year-Month-Day" format
-string pbiFolderName = Path.Combine(addedPath, DateToday); // Combine the base folder path with the current date to create a new folder path
+
+// Dynamically find the latest-dated folder
+string[] folders = Directory.GetDirectories(addedPath);
+string latestFolder = null;
+DateTime latestDate = DateTime.MinValue;
+
+foreach (string folder in folders)
+{
+    string folderName = Path.GetFileName(folder);
+    DateTime folderDate;
+
+    if (DateTime.TryParseExact(folderName, "yyyy-MM-dd", null, System.Globalization.DateTimeStyles.None, out folderDate))
+    {
+        if (folderDate > latestDate)
+        {
+            latestDate = folderDate;
+            latestFolder = folder;
+        }
+    }
+}
+
+// Use the latest-dated folder, or fallback to today's date if no valid folder is found
+string pbiFolderName = latestFolder != null ? latestFolder : Path.Combine(addedPath, DateTime.Now.ToString("yyyy-MM-dd"));
 Directory.CreateDirectory(pbiFolderName);
+
 string pbiFile = @"";
 bool saveToFile = true;
 bool addPersp = false;
@@ -32,6 +54,7 @@ string newline = Environment.NewLine;
 string savePrefix = "ReportObjects";
 bool singleFile = true;
 bool createPersp = false;
+
 if (pbiFile.Length == 0)
 {
     singleFile = false;
@@ -56,7 +79,7 @@ var sb_ReportFilters = new System.Text.StringBuilder();
 sb_ReportFilters.Append("ReportName" + '\t' + "DisplayName" + '\t' + "TableName" + '\t' + "ObjectName" + '\t' + "ObjectType" + '\t' + "FilterType"  + '\t' + "HiddenFilter"  + '\t' + "LockedFilter"  + '\t' + "AppliedFilterVersion"  + '\t' + "ReportDate" + newline);
 
 var sb_VisualObjects = new System.Text.StringBuilder();
-sb_VisualObjects.Append("ReportName" + '\t' + "PageName" + '\t' + "VisualId" + '\t' + "VisualType" + '\t' + "CustomVisualFlag" + '\t' + "TableName" + '\t' + "ObjectName" + '\t' + "ObjectType" + '\t' + "Source" + '\t' + "DisplayName" + '\t' + "ReportDate" + newline);
+sb_VisualObjects.Append("ReportName" + '\t' + "PageName" + '\t' + "VisualId" + '\t' + "VisualType" + '\t' + "AppliedFilterVersion" + '\t' + "CustomVisualFlag" + '\t' + "TableName" + '\t' + "ObjectName" + '\t' + "ObjectType" + '\t' + "Source" + '\t' + "DisplayName" + '\t' + "ReportDate" + newline);
 
 var sb_VisualFilters = new System.Text.StringBuilder();
 sb_VisualFilters.Append("ReportName" + '\t' + "PageName" + '\t' + "VisualId" + '\t' + "TableName" + '\t' + "ObjectName" + '\t' + "ObjectType" + '\t' + "FilterType" + '\t' + "HiddenFilter"  + '\t' + "LockedFilter"  + '\t' + "AppliedFilterVersion"  + '\t' + "DisplayName" + '\t' + "ReportDate" + newline);
@@ -110,7 +133,7 @@ foreach (var rpt in FileList)
     var VisualInteractions = new List<VisualInteraction>();
     string fileExt = Path.GetExtension(rpt);
     string ReportName = Path.GetFileNameWithoutExtension(rpt);
-    string ReportDate = DateTime.Now.ToString("yyyy-MM-dd");
+    string ReportDate = latestFolder != null ? latestDate.ToString("yyyy-MM-dd") : DateTime.Now.ToString("yyyy-MM-dd");
     string folderName = Path.GetDirectoryName(rpt) + @"\";
     string zipPath = folderName + ReportName + ".zip";
     string unzipPath = folderName + ReportName;
@@ -172,7 +195,23 @@ finally
     string formattedJson = Newtonsoft.Json.Linq.JToken.Parse(unformattedJson).ToString();
     dynamic json = Newtonsoft.Json.Linq.JObject.Parse(formattedJson);
     
-    // Connections file
+    
+
+
+
+
+
+
+
+// ****Connections file****
+
+
+
+
+
+
+
+
     string svName = string.Empty;
     string dbName = string.Empty;
     string datetoday = string.Empty;
@@ -189,52 +228,65 @@ finally
         dynamic connjson = Newtonsoft.Json.Linq.JObject.Parse(formattedconnJson);
         
         // Connection info
-        try
-        {
-            foreach (var o in connjson["Connections"].Children())
-            {
-                connType = (string)o["ConnectionType"];
-                try
-                {
-                    
-                    dbName = (string)o["PbiModelDatabaseName"];
-                }
-                catch
-                {
-                }
-                if (connType != "pbiServiceLive")
-                {
-                    try
-                    {
-                        
-                        string x = (string)o["ConnectionString"];
-                        string dsCatch = "Data Source=";
-                        string icCatch = ";Initial Catalog=";
-                        int dsCatchLen = dsCatch.Length;
-                        int icCatchLen = icCatch.Length;
-                        svName = x.Substring(x.IndexOf(dsCatch)+dsCatchLen,x.IndexOf(";")-x.IndexOf(dsCatch)-dsCatchLen);
-                        int svNameLen = svName.Length;
-                        dbName = x.Substring(x.IndexOf(icCatch)+icCatchLen);
-                        
-                    }
-                    catch
-                    {                    
-                    }
-                }            
-            }
-        }
-        catch
+try
+{
+    foreach (var o in connjson["Connections"].Children())
+    {
+        connType = (string)o["ConnectionType"];
+
+        // For specific connection types
+        if (connType == "pbiServiceLive" || connType == "pbiServiceXmlaStyleLive")
         {
             try
             {
                 dbName = (string)connjson["RemoteArtifacts"][0]["DatasetId"];
                 rptId = (string)connjson["RemoteArtifacts"][0]["ReportId"];
-                connType = "localPowerQuery";
             }
             catch
             {
             }
         }
+        else
+        {
+            // For other connection types
+            try
+            {
+                dbName = (string)o["PbiModelDatabaseName"];
+            }
+            catch
+            {
+            }
+
+            try
+            {
+                string x = (string)o["ConnectionString"];
+                string dsCatch = "Data Source=";
+                string icCatch = ";Initial Catalog=";
+                int dsCatchLen = dsCatch.Length;
+                int icCatchLen = icCatch.Length;
+
+                svName = x.Substring(x.IndexOf(dsCatch) + dsCatchLen, x.IndexOf(";") - x.IndexOf(dsCatch) - dsCatchLen);
+                dbName = x.Substring(x.IndexOf(icCatch) + icCatchLen);
+            }
+            catch
+            {
+            }
+        }
+    }
+}
+catch
+{
+    // Fallback for localPowerQuery
+    try
+    {
+        dbName = (string)connjson["RemoteArtifacts"][0]["DatasetId"];
+        rptId = (string)connjson["RemoteArtifacts"][0]["ReportId"];
+        connType = "localPowerQuery";
+    }
+    catch
+    {
+    }
+}
         Connections.Add(new Connection {ServerName = svName, DatabaseName = dbName, Type = connType, ReportID = rptId});        
     }
     
@@ -279,7 +331,22 @@ finally
     {
     }
 
-    // Report-Level Filters
+
+
+
+
+
+
+
+    // ****Report-Level Filters****
+
+
+
+
+
+
+
+
     string rptFilters = json["filters"];
 
     try
@@ -380,7 +447,23 @@ catch (Exception ex)
     {        
     }
 
-// Pages
+
+
+
+
+
+
+
+
+// ****Pages****
+
+
+
+
+
+
+
+
 foreach (var o in json["sections"].Children())
 {
     string pageId = (string)o["name"];
@@ -446,7 +529,23 @@ dynamic pageConfigJson = string.IsNullOrEmpty(formattedpagconfigJson)
         {            
         }
         
-        // Visual Interactions
+
+
+
+
+
+
+
+
+        // ****Visual Interactions****
+
+
+
+
+
+
+
+
         try
         {
             foreach (var o2 in pageConfigJson["relationships"].Children())
@@ -506,7 +605,23 @@ dynamic pageConfigJson = string.IsNullOrEmpty(formattedpagconfigJson)
         
         Pages.Add(new Page {Id = pageId, Name = pageName, Number = pageNumber, Width = pageWidth, Height = pageHeight, HiddenFlag = pageHid, VisualCount = visualCount, BackgroundImage = pageBkgrd, WallpaperImage = pageWall, Type = pageType });
 
-        // Page-Level Filters
+        
+
+
+
+
+
+
+
+// ****Page-Level Filters****
+
+
+
+
+
+
+
+
         foreach (var o2 in pageFltJson.Children())
         {
             string displayName = (string)o2["displayName"];
@@ -596,7 +711,22 @@ catch (Exception ex)
             PageFilters.Add(new PageFilter {PageId = pageId, PageName = pageName, displayName = displayName, TableName = tblName, ObjectName = objName, ObjectType = objType, FilterType = pgFltType, HiddenFilter = pghiddenfilter, LockedFilter = pglockedfilter, AppliedFilterVersion = pgappliedfilterversion });
         }
 
-        // Visuals
+
+
+
+
+
+
+
+        // ****Visuals****
+
+
+
+
+
+
+
+
         foreach (var vc in o["visualContainers"].Children())
         {                        
             string config = (string)vc["config"];
@@ -626,33 +756,37 @@ catch (Exception ex)
             {
             }         
             
-            // Show Items With No Data
-            try
-            {
-                string sInd = (string)configJson["singleVisual"]["showAllRoles"][0];
-                
-                if (sInd == "Values")
-                {
-                    showItemsNoData = true;
-                }
-            }
-            catch
-            {
-            }                
+        // Show Items With No Data
+    try
+    {
+            string sInd = (string)configJson["singleVisual"]["showAllRoles"][0];
+    
+        // Check for "Values", "Rows", or "Columns"
+        if (sInd == "Values" || sInd == "Rows" || sInd == "Columns")
+        {
+            showItemsNoData = true;
+        }
+    }
+    catch
+    {
+    }
 
-            try
-            {
-                visualType = (string)configJson["singleVisual"]["visualType"];
-            }
-            catch
-            {
-                visualType = "visualGroup";
-            }
-            
-            if (CustomVisuals.Exists(a => a.Name == visualType))
-            {
-                customVisualFlag = true;
-            }
+    // Determine Visual Type
+    try
+    {
+        visualType = (string)configJson["singleVisual"]["visualType"];
+    }
+    catch
+    {
+        visualType = "visualGroup";
+    }
+
+    // Check if the visual type is a custom visual
+    if (CustomVisuals.Exists(a => a.Name == visualType))
+    {
+        customVisualFlag = true;
+    }
+
 
             // Visual Name
             try
@@ -722,7 +856,23 @@ catch (Exception ex)
             {
             }
 
-            // Visual Objects
+
+
+
+
+
+
+
+
+            // ****Visual Objects****
+
+
+
+
+
+
+
+
             try
             {
                 objCount = configJson["singleVisual"]["prototypeQuery"]["Select"].Count;
@@ -735,6 +885,7 @@ catch (Exception ex)
                     bool isSpark = false;
                     string sourceLabel = "Standard";
                     string displayName = string.Empty;
+            string appliedFilterVersion = string.Empty;
         try
         {
             string objectRef = (string)o2["Name"];
@@ -883,7 +1034,18 @@ catch (Exception ex)
                     }
                     catch
                     {
-                    }                  
+                    }     
+                    
+                    try
+                    {
+
+                appliedFilterVersion = (string)configJson["singleVisual"]["objects"]["general"][0]["properties"]["filter"]["filter"]["Version"];
+                    }
+                catch
+                {
+
+                }
+        
 
                     foreach (var t in configJson["singleVisual"]["prototypeQuery"]["From"].Children())
                     {
@@ -935,7 +1097,7 @@ catch (Exception ex)
                         sourceLabel = "Sparkline";
                     }
                         
-                    VisualObjects.Add(new VisualObject {PageName = pageName, VisualId = visualId, VisualType = visualType, displayName = displayName, CustomVisualFlag = customVisualFlag, ObjectName = objectName, TableName = tableName, ObjectType = objectType, Source = sourceLabel});
+                    VisualObjects.Add(new VisualObject {PageName = pageName, VisualId = visualId, VisualType = visualType, AppliedFilterVersion = appliedFilterVersion, displayName = displayName, CustomVisualFlag = customVisualFlag, ObjectName = objectName, TableName = tableName, ObjectType = objectType, Source = sourceLabel});
                     
                     if (isSpark)
                     {
@@ -2176,7 +2338,23 @@ catch (Exception ex)
 
             Visuals.Add(new Visual {PageName = pageName, Id = visualId, Name = visualName, Type = visualType, CustomVisualFlag = customVisualFlag, HiddenFlag = visHid, X = cx, Y = cy, Z = cz, Width = cw, Height = ch, ObjectCount = objCount, ShowItemsNoDataFlag = showItemsNoData, SlicerType = slicerType, ParentGroup = parentGroup });
             
-            // Visual Filters
+            
+
+
+
+
+
+
+
+// ****Visual Filters****
+
+
+
+
+
+
+
+
             string visfilter = (string)vc["filters"];
             
             if (visfilter != null)
@@ -2571,7 +2749,23 @@ try
         }
     }
 
-    // Bookmarks
+    
+
+
+
+
+
+
+
+// ****Bookmarks****
+
+
+
+
+
+
+
+
     try
     {
         string configEnd = (string)json["config"];
@@ -2671,7 +2865,7 @@ try
     }
     foreach (var x in VisualObjects.ToList())
     {
-        sb_VisualObjects.Append(ReportName + '\t' + x.PageName + '\t' + x.VisualId + '\t' + x.VisualType + '\t' + x.CustomVisualFlag + '\t' + x.TableName + '\t' + x.ObjectName + '\t' + x.ObjectType + '\t' + x.Source + '\t' + x.displayName + '\t' + ReportDate + newline);
+        sb_VisualObjects.Append(ReportName + '\t' + x.PageName + '\t' + x.VisualId + '\t' + x.VisualType + '\t' + x.AppliedFilterVersion + '\t' + x.CustomVisualFlag + '\t' + x.TableName + '\t' + x.ObjectName + '\t' + x.ObjectType + '\t' + x.Source + '\t' + x.displayName + '\t' + ReportDate + newline);
     }
     foreach (var x in Bookmarks.ToList())
     {
@@ -2932,6 +3126,7 @@ public class VisualObject
     public string displayName { get; set; }
     public string VisualId { get; set; }
     public string VisualType { get; set; }
+    public string AppliedFilterVersion { get; set; }
     public bool CustomVisualFlag { get; set; }
     public string TableName { get; set; }
     public string ObjectName { get; set; }
