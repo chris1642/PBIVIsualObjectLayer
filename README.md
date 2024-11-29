@@ -1,3 +1,5 @@
+This is an old repo that still works but a much more comprehensive solution is here: https://github.com/chris1642/Power-BI-Backup-Impact-Analysis-Governance-Solution
+
 Recommended: use a Base folder that is cloud-based (such as a SharePoint folder synced to your computer) - this will make it easy to leverage within a Power BI semantic model and automatic refreshes. 
 
 1. PowerShell Script: Define Workspace ID & Base Folder (currently defaulted to C:/Power BI Backups)
